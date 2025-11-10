@@ -12,7 +12,7 @@ const THRESHOLD = 5;
 function ServiceIndicatorsTooltip() {
   return (
     <div className='bg-green-500 py-4 px-4 rounded-full'>
-      S
+      Service details
     </div>
   )
 }
