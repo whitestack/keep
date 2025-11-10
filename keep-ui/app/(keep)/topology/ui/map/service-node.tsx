@@ -9,7 +9,7 @@ import { DynamicImageProviderIcon } from "@/components/ui";
 
 const THRESHOLD = 5;
 
-function ServiceIndicators() {
+function ServiceIndicatorsTooltip() {
   return (
     <div className='bg-green-500 py-4 px-4 rounded-full'>
       S
@@ -180,7 +180,7 @@ export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
         position={indicatorsTooltipDirection}
         // className={clsx("tooltip-ref", !isTooltipReady && "invisible")}
       >
-        <ServiceIndicators />
+        <ServiceIndicatorsTooltip />
       </NodeToolbar>
       <NodeToolbar
         isVisible={showDetails}
