@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Handle, NodeProps, NodeToolbar, Position } from "@xyflow/react";
 import { useRouter } from "next/navigation";
-import { ServiceNodeType, TopologyService } from "../../model/models";
+import { ServiceNodeType, TopologyService, ServiceIndicators} from "../../model/models";
 import { Badge } from "@tremor/react";
 import { getColorForUUID } from "@/app/(keep)/topology/lib/badge-colors";
 import { clsx } from "clsx";
@@ -9,6 +9,13 @@ import { DynamicImageProviderIcon } from "@/components/ui";
 
 const THRESHOLD = 5;
 
+function ServiceIndicators() {
+  return (
+    <div className='bg-green-500 py-4 px-4 rounded-full'>
+      S
+    </div>
+  )
+}
 function ServiceDetailsTooltip({ data }: { data: TopologyService }) {
   return (
     <div className="py-2 px-3 bg-tremor-background-muted border rounded shadow-lg flex flex-col gap-2 text-xs">
@@ -76,6 +83,9 @@ export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
   const [isTooltipReady, setIsTooltipReady] = useState(false);
   const [tooltipDirection, setTooltipDirection] = useState<Position>(
     Position.Bottom
+  );
+  const [indicatorsTooltipDirection, setIndicatorsTooltipDirection] = useState<Position>(
+    Position.Top
   );
 
   useEffect(() => {
@@ -164,7 +174,14 @@ export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
           })}
         </div>
       </div>
-
+      
+      <NodeToolbar
+        isVisible
+        position={indicatorsTooltipDirection}
+        // className={clsx("tooltip-ref", !isTooltipReady && "invisible")}
+      >
+        <ServiceIndicators />
+      </NodeToolbar>
       <NodeToolbar
         isVisible={showDetails}
         position={tooltipDirection}

@@ -9,6 +9,9 @@ export interface TopologyServiceDependency {
   protocol?: string;
 }
 
+export interface ServiceIndicators {
+  status: string
+}
 export interface TopologyService {
   id: string;
   source_provider_id?: string;
