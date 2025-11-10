@@ -1,25 +1,20 @@
-'use server';
-
-import {
-  CopilotRuntime,
-  OpenAIAdapter,
-  copilotRuntimeNextJSAppRouterEndpoint,
-} from "@copilotkit/runtime";
 import { NextRequest } from "next/server";
 
 export const POST = async (req: NextRequest) => {
-  const { default: OpenAI } = await import("openai");
+  if (process.env.COPILOT_DISABLED === "true") {
+    return new Response("Copilot disabled", { status: 503 });
+  }
+
+  const { CopilotRuntime, OpenAIAdapter, copilotRuntimeNextJSAppRouterEndpoint } =
+    await import("@copilotkit/runtime");
+  const OpenAI = (await import("openai")).default;
 
   const openai = new OpenAI({
     organization: process.env.OPEN_AI_ORGANIZATION_ID,
     apiKey: process.env.OPEN_AI_API_KEY,
   });
 
-  const serviceAdapter = new OpenAIAdapter({
-    openai,
-    model: process.env.OPENAI_MODEL_NAME || "gpt-4o-mini",
-  });
-
+  const serviceAdapter = new OpenAIAdapter({ openai });
   const runtime = new CopilotRuntime();
 
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
@@ -28,5 +23,5 @@ export const POST = async (req: NextRequest) => {
     endpoint: "/api/copilotkit",
   });
 
-  return await handleRequest(req);
+  return handleRequest(req);
 };
