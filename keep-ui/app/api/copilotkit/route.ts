@@ -1,48 +1,32 @@
-export const runtime = "nodejs";
+'use server';
 
 import {
   CopilotRuntime,
   OpenAIAdapter,
   copilotRuntimeNextJSAppRouterEndpoint,
 } from "@copilotkit/runtime";
-import OpenAI, { OpenAIError } from "openai";
 import { NextRequest } from "next/server";
 
 export const POST = async (req: NextRequest) => {
-  function initializeCopilotRuntime() {
-    try {
-      const openai = new OpenAI({
-        organization: process.env.OPEN_AI_ORGANIZATION_ID,
-        apiKey: process.env.OPEN_AI_API_KEY,
-      });
-      const serviceAdapter = new OpenAIAdapter({
-        openai,
-        ...(process.env.OPENAI_MODEL_NAME
-          ? { model: process.env.OPENAI_MODEL_NAME }
-          : {}),
-      });
-      const runtime = new CopilotRuntime();
-      return { runtime, serviceAdapter };
-    } catch (error) {
-      if (error instanceof OpenAIError) {
-        console.log("Error connecting to OpenAI", error);
-      } else {
-        console.error("Error initializing Copilot Runtime", error);
-      }
-      return null;
-    }
-  }
+  const { default: OpenAI } = await import("openai");
 
-  const runtimeOptions = initializeCopilotRuntime();
+  const openai = new OpenAI({
+    organization: process.env.OPEN_AI_ORGANIZATION_ID,
+    apiKey: process.env.OPEN_AI_API_KEY,
+  });
 
-  if (!runtimeOptions) {
-    return new Response("Error initializing Copilot Runtime", { status: 500 });
-  }
+  const serviceAdapter = new OpenAIAdapter({
+    openai,
+    model: process.env.OPENAI_MODEL_NAME || "gpt-4o-mini",
+  });
+
+  const runtime = new CopilotRuntime();
+
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
-    runtime: runtimeOptions.runtime,
-    serviceAdapter: runtimeOptions.serviceAdapter,
+    runtime,
+    serviceAdapter,
     endpoint: "/api/copilotkit",
   });
 
-  return handleRequest(req);
+  return await handleRequest(req);
 };
