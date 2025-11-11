@@ -18,6 +18,7 @@ export interface TopologyService {
   repository?: string;
   tags?: string[];
   service: string;
+  status: string;
   display_name: string;
   description?: string;
   team?: string;

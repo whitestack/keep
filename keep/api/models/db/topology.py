@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
+from enum import Enum
 
 from pydantic import BaseModel
 from sqlalchemy import DateTime, ForeignKey
@@ -137,6 +138,19 @@ class TopologyServiceInDto(TopologyServiceDtoBase):
     application_relations: Optional[dict[UUID, str]] = (
         None  # An option field, pass it in the form of {application_id_1: application_name_1, application_id_2: application_name_2, ...} tha t the service belongs to, the process_topology function handles the creation/updation of the application
     )
+
+class Status(Enum):
+    ACTIVE = 'ACTIVE'
+    INACTIVE = 'INACTIVE'
+    UNKNOWN = 'UNKNOWN'
+    DOWN = 'DOWN'
+
+class MonitorableTopologyServiceInDto(TopologyServiceDtoBase):
+    dependencies: dict[str, str] = {}  # dict of service it depends on : protocol
+    application_relations: Optional[dict[UUID, str]] = (
+        None  # An option field, pass it in the form of {application_id_1: application_name_1, application_id_2: application_name_2, ...} tha t the service belongs to, the process_topology function handles the creation/updation of the application
+    )
+    status: Optional[Status] = Status.UNKNOWN
 
 
 class TopologyServiceDependencyDto(BaseModel, extra="ignore"):
