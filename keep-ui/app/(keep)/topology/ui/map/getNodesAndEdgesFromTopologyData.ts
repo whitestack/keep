@@ -76,6 +76,7 @@ export function getNodesAndEdgesFromTopologyData(
           labelBgStyle: edgeLabelBgStyleNoHover,
           labelBgBorderRadius: edgeLabelBgBorderRadiusNoHover,
           markerEnd: edgeMarkerEndNoHover,
+          markerStart: edgeMarkerEndNoHover,
         });
       }
     });
