@@ -65,6 +65,7 @@
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/core": "^1.9.0",
     "@opentelemetry/sdk-trace-base": "^1.9.0",
+    "@opentelemetry/context-async-hooks": "^1.9.0",
     "openai": "^4.86.2",
     "posthog-js": "^1.229.5",
     "pusher-js": "^8.4.0",
