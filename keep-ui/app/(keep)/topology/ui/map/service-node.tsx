@@ -9,7 +9,7 @@ import { DynamicImageProviderIcon } from "@/components/ui";
 
 const THRESHOLD = 5;
 
-function ServiceIndicatorsTooltip({status}: {status: string}) {
+function ServiceIndicatorsTooltip({status, ip}: {status: string, ip: string|undefined }) {
   const statusColors: Record<string, string> = {
     ACTIVE: "bg-green-500",
     INACTIVE: "bg-gray-400",
@@ -21,7 +21,9 @@ function ServiceIndicatorsTooltip({status}: {status: string}) {
   const bgColor = statusColors[status] || statusColors["UNKNOWN"];
 
   return (
-    <div className={`${bgColor} w-3 h-3 rounded-full`}/>
+    <div className={`${bgColor} w-3 h-3 rounded-full`}>
+      IP ADDRESS {ip}
+      </div>
   )
 }
 function ServiceDetailsTooltip({ data }: { data: TopologyService }) {
@@ -188,7 +190,7 @@ export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
         position={indicatorsTooltipDirection}
         // className={clsx("tooltip-ref", !isTooltipReady && "invisible")}
       >
-        <ServiceIndicatorsTooltip status={data.status}/>
+        <ServiceIndicatorsTooltip ip={data.ip_address} status={data.status}/>
       </NodeToolbar>
       <NodeToolbar
         isVisible={showDetails}

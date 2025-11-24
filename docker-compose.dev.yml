@@ -1,31 +1,41 @@
 services:
   keep-frontend-dev:
-    extends:
-      file: docker-compose.common.yml
-      service: keep-frontend-common
+    ports:
+      - "3000:3000"
     environment:
-      - API_URL=http://keep-backend-dev:8080
-      - SENTRY_DISABLED=true
+      # - NEXTAUTH_SECRET=secret
+      - NEXTAUTH_URL=http://localhost:3000
+      # - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - POSTHOG_KEY=phc_muk9qE3TfZsX3SZ9XxX52kCGJBclrjhkP9JxAQcm1PZ
+      - POSTHOG_HOST=https://ingest.keephq.dev
+      - NEXT_PUBLIC_SENTRY_DSN=https://0d4d59e3105ffe8afa27dcb95a222009@o4505515398922240.ingest.us.sentry.io/4508258058764288
+      - PUSHER_HOST=localhost
+      - PUSHER_PORT=6001
+      - PUSHER_APP_KEY=keepappkey
+      - API_URL=http://keep.whitemon.whitestack.com
+      - AUTH_TYPE=NO_AUTH
+      # - SENTRY_DISABLED=true
+      - NEXTAUTH_SECRET=whitemon
     build:
       dockerfile: docker/Dockerfile.dev.ui
     volumes:
       - ./keep-ui:/app
-      - /app/node_modules
+      # - /app/node_modules
       - /app/.next
-    depends_on:
-      - keep-backend-dev
+    # depends_on:
+    #   - keep-backend-dev
 
-  keep-backend-dev:
-    extends:
-      file: docker-compose.common.yml
-      service: keep-backend-common
-    build:
-      dockerfile: docker/Dockerfile.dev.api
-    volumes:
-      - .:/app
-      - ./state:/state
+  # keep-backend-dev:
+  #   extends:
+  #     file: docker-compose.common.yml
+  #     service: keep-backend-common
+  #   build:
+  #     dockerfile: docker/Dockerfile.dev.api
+  #   volumes:
+  #     - .:/app
+  #     - ./state:/state
 
-  keep-websocket-server:
-    extends:
-      file: docker-compose.common.yml
-      service: keep-websocket-server-common
+  # keep-websocket-server:
+  #   extends:
+  #     file: docker-compose.common.yml
+  #     service: keep-websocket-server-common
