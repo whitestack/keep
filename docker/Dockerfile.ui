@@ -8,6 +8,11 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY ../keep-ui/package.json ../keep-ui/package-lock.json ./
+# DEBUG ▼▼▼
+RUN echo "=== FILES IN /app ===" && ls -lah .
+RUN echo "=== package.json HEAD ===" && head -20 package.json
+RUN echo "=== package-lock.json HEAD ===" && head -20 package-lock.json
+
 RUN npm ci  --noproxy registry.npmjs.org --maxsockets 1
 
 
