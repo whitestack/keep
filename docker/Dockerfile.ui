@@ -7,7 +7,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY ../keep-ui/package.json ../keep-ui/package-lock.json ./
+COPY keep-ui/package.json keep-ui/package-lock.json ./
 RUN npm ci  --noproxy registry.npmjs.org --maxsockets 1
 
 
