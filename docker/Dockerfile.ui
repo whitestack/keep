@@ -9,7 +9,7 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY keep-ui/package.json ./package.json
 COPY keep-ui/package-lock.json ./package-lock.json
-RUN ls -Rlah /app    # 👈 aquí listará todo lo que recibió
+RUN ls -Rlah ./    # 👈 aquí listará todo lo que recibió
 
 RUN npm ci  --noproxy registry.npmjs.org --maxsockets 1
 
