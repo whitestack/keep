@@ -270,7 +270,7 @@ export function TopologyMap({
         sourceService?.is_manual === true &&
         targetService?.is_manual === true
       ) {
-        setEdges((eds) => addEdge(params, eds));
+        setEdges((eds) => addEdge(params, eds as any));
         try {
           const response = await api.post("/topology/dependency", {
             service_id: sourceService.id,
@@ -311,7 +311,7 @@ export function TopologyMap({
       ) {
         return;
       } else {
-        setEdges((els) => reconnectEdge(oldEdge, newConnection, els));
+        setEdges((els) => reconnectEdge(oldEdge, newConnection, els as any));
         try {
           const response = await api.put("/topology/dependency", {
             id: oldEdge.id,
@@ -321,7 +321,7 @@ export function TopologyMap({
           mutateTopologyData();
         } catch (error) {
           setEdges((eds) => eds.filter((e) => e.id !== oldEdge.id));
-          setEdges((eds) => addEdge(oldEdge, eds));
+          setEdges((eds) => addEdge(oldEdge, eds as any));
           showErrorToast(
             error,
             `Error while adding (re)connection from ${newConnection.source} to ${newConnection.target}`
@@ -657,7 +657,7 @@ export function TopologyMap({
               fitViewOptions={defaultFitViewOptions}
               onNodesChange={onNodesChange}
               onEdgesChange={onEdgesChange}
-              onReconnect={onReconnect}
+              // onReconnect={onReconnect}
               onReconnectStart={onReconnectStart}
               onReconnectEnd={onReconnectEnd}
               onConnect={onConnect}
