@@ -10,13 +10,13 @@
 //   redirect(`/incidents/${(await props.params).id}/alerts`);
 // }
 
-import { NextRequest } from "next/server";
-import { redirect } from "next/navigation";
+import { NextRequest, NextResponse } from "next/server";
+import { redirect } from "next/server"; // <-- ESTA ES LA CORRECTA
 
 export function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const id = context.params.id;
+  const id = params.id;
   return redirect(`/incidents/${id}/alerts`);
 }
