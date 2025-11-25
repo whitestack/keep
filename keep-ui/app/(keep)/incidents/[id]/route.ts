@@ -13,9 +13,10 @@
 import { NextRequest } from "next/server";
 import { redirect } from "next/navigation";
 
-export async function GET(
+export function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  redirect(`/incidents/${params.id}/alerts`);
+  const id = context.params.id;
+  return redirect(`/incidents/${id}/alerts`);
 }
