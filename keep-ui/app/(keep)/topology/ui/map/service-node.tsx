@@ -21,9 +21,10 @@ function ServiceIndicatorsTooltip({status, ip}: {status: string, ip: string|unde
   const bgColor = statusColors[status] || statusColors["UNKNOWN"];
 
   return (
-    <div className={`${bgColor} w-3 h-3 rounded-full`}>
-      IP ADDRESS {ip}
-      </div>
+    <div>
+      <div className={`${bgColor} w-3 h-3 rounded-full`}/>
+      <p className="text-sm text-gray-500">10.100.10.11</p>
+    </div>
   )
 }
 function ServiceDetailsTooltip({ data }: { data: TopologyService }) {
