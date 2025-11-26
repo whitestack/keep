@@ -70,7 +70,7 @@ export function getNodesAndEdgesFromTopologyData(
           id: edgeId.toString(),
           source: service.id.toString(),
           target: dependencyService?.id.toString() ?? "",
-          label: dependency.protocol === "unknown" ? "" : dependency.protocol,
+          label: dependency.protocol === "unknown" ? "" : dependency.protocol + ": 2Mbps",
           animated: false,
           labelBgPadding: edgeLabelBgPaddingNoHover,
           labelBgStyle: edgeLabelBgStyleNoHover,
