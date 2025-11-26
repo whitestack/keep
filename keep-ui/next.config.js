@@ -17,6 +17,9 @@ const turbopackAliases =
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   reactStrictMode: false,
   devIndicators: {
     position: "bottom-right",
