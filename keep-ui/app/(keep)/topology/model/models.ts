@@ -41,10 +41,20 @@ export interface TopologyServiceWithMutator extends TopologyService {
   topologyMutator: KeyedMutator<TopologyService[]>;
 }
 
+export interface WhitecloudServiceWithMutator extends TopologyService {
+  topologyMutator: KeyedMutator<TopologyService[]>;
+  node_type?: string;
+}
+
 // We need to convert interface to type because only types are allowed in @xyflow/react
 // https://github.com/xyflow/web/issues/486
 export type ServiceNodeType = Node<
   InterfaceToType<TopologyServiceWithMutator>,
+  string
+>;
+
+export type WhitecloudNodeType = Node<
+  InterfaceToType<WhitecloudServiceWithMutator>,
   string
 >;
 

@@ -24,6 +24,7 @@ import {
   reconnectEdge,
 } from "@xyflow/react";
 import { ServiceNode } from "./service-node";
+import { WhitestackNode } from "./whitestack-node";
 import { Button, Card, MultiSelect, MultiSelectItem } from "@tremor/react";
 import {
   ArrowUpRightIcon,
@@ -665,7 +666,7 @@ export function TopologyMap({
               onEdgeMouseEnter={(_event, edge) => onEdgeHover("enter", edge)}
               onEdgeMouseLeave={(_event, edge) => onEdgeHover("leave", edge)}
               nodeTypes={{
-                service: ServiceNode,
+                service: WhitestackNode,
                 application: ApplicationNode,
               }}
               onInit={(instance) => {

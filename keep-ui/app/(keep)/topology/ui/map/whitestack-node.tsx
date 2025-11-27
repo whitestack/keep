@@ -1,0 +1,221 @@
+import React, { useEffect, useState } from "react";
+import { Handle, NodeProps, NodeToolbar, Position } from "@xyflow/react";
+import { useRouter } from "next/navigation";
+import { ServiceNodeType, TopologyService, ServiceIndicators, WhitecloudNodeType} from "../../model/models";
+import { Badge } from "@tremor/react";
+import { getColorForUUID } from "@/app/(keep)/topology/lib/badge-colors";
+import { clsx } from "clsx";
+import { WhitestackDynamicImageProviderIcon } from "@/components/ui/WhitestackDynamicProviderIcon";
+
+const THRESHOLD = 5;
+
+function ServiceIndicatorsTooltip({status, ip}: {status: string, ip: string|undefined }) {
+  const statusColors: Record<string, string> = {
+    ACTIVE: "bg-green-500",
+    INACTIVE: "bg-gray-400",
+    ERROR: "bg-red-500",
+    WARNING: "bg-yellow-500",
+    UNKNOWN: "bg-slate-500",
+  };
+
+  const bgColor = statusColors[status] || statusColors["UNKNOWN"];
+
+  return (
+    <div>
+      <div className={`${bgColor} w-6 h-6 rounded-full`}/>
+      <p className="text-sm text-gray-500">10.100.10.11</p>
+    </div>
+  )
+}
+function ServiceDetailsTooltip({ data }: { data: TopologyService }) {
+  return (
+    <div className="py-2 px-3 bg-tremor-background-muted border rounded shadow-lg flex flex-col gap-2 text-xs">
+      {data.service && (
+        <div>
+          <p className="text-gray-500">Service</p>
+          <span>{data.service}</span>
+        </div>
+      )}
+      {data.display_name && (
+        <div>
+          <p className="text-gray-500">Display Name</p>
+          <span>{data.display_name}</span>
+        </div>
+      )}
+      {data.description && (
+        <div>
+          <p className="text-gray-500">Description</p>
+          <span>{data.description}</span>
+        </div>
+      )}
+      {data.team && (
+        <div>
+          <p className="text-gray-500">Team</p>
+          <span>{data.team}</span>
+        </div>
+      )}
+      {data.email && (
+        <div>
+          <p className="text-gray-500">Email</p>
+          <span>{data.email}</span>
+        </div>
+      )}
+      {data.slack && (
+        <div>
+          <p className="text-gray-500">Slack</p>
+          <span>{data.slack}</span>
+        </div>
+      )}
+      {data.ip_address && (
+        <div>
+          <p className="text-gray-500">IP Address</p>
+          <span>{data.ip_address}</span>
+        </div>
+      )}
+      {data.mac_address && (
+        <div>
+          <p className="text-gray-500">MAC Address</p>
+          <span>{data.mac_address}</span>
+        </div>
+      )}
+      {data.manufacturer && (
+        <div>
+          <p className="text-gray-500">Manufacturer</p>
+          <span>{data.manufacturer}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function WhitestackNode({ data, selected }: NodeProps<WhitecloudNodeType>) {
+  const router = useRouter();
+  const [showDetails, setShowDetails] = useState(false);
+  const [isTooltipReady, setIsTooltipReady] = useState(false);
+  const [tooltipDirection, setTooltipDirection] = useState<Position>(
+    Position.Bottom
+  );
+  const [indicatorsTooltipDirection, setIndicatorsTooltipDirection] = useState<Position>(
+    Position.Top
+  );
+
+  useEffect(() => {
+    if (!showDetails) {
+      setTooltipDirection(Position.Bottom);
+      setIsTooltipReady(false);
+      return;
+    }
+
+    const node = document.querySelector(".tooltip-ref");
+    if (!node) return;
+
+    const rect = node.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    if (rect.bottom + 10 > viewportHeight) {
+      setTooltipDirection(Position.Top);
+    } else {
+      setTooltipDirection(Position.Bottom);
+    }
+    setIsTooltipReady(true);
+  }, [showDetails]);
+
+  const handleIncidentClick = () => {
+    router.push(`/incidents?services=${encodeURIComponent(data.display_name)}`);
+  };
+
+  const handleAlertClick = () => {
+    const cel = `service=="${data.display_name}"`;
+    router.push(`/alerts/feed?cel=${encodeURIComponent(cel)}`);
+  };
+
+  const incidentsCount = data.incidents ?? 0;
+  const alertsCount = data.alerts ?? 0;
+  const badgeColor =
+    incidentsCount < THRESHOLD ? "bg-orange-500" : "bg-red-500";
+
+  return (
+    <>
+      <div
+        className={clsx(
+          "flex flex-col gap-1 bg-white p-4 border-2 border-gray-200 rounded-xl shadow-lg relative transition-colors",
+          selected && "border-tremor-brand"
+        )}
+        onMouseEnter={() => setShowDetails(true)}
+        onMouseLeave={() => setShowDetails(false)}
+      >
+        
+        <div className="absolute top-2 right-2 text-gray-400">
+            <WhitestackDynamicImageProviderIcon
+                className="inline-block"
+                alt="router"
+                height={24}
+                width={24}
+                title="router"
+                src={`/whitestack-icons/router.png`}
+            />
+        </div>
+        
+        <strong className="text-lg">{data.display_name || data.service}</strong>
+        <svg fill="#000000" height="1rem" width="1rem" version="1.1" id="XMLID_142_" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xmlSpace="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g id="virtual-machine"> <g> <path d="M15,24H0V9h5V0h15v5h4v15h-9V24z M2,22h11v-2H9v-5H5v-4H2V22z M15,18h7V7h-2v8h-5V18z M11,18h2v-3h-2V18z M15,13h3V7h-7v2 h4V13z M11,13h2v-2h-2V13z M7,13h2v-2H7V13z M7,9h2V5h9V2H7V9z"></path> </g> </g> </g></svg>
+        {incidentsCount > 0 ? (
+          <span
+            className={`absolute top-[-17px] right-[-20px] mt-2 mr-2 px-2 py-1 text-white text-[7px] leading-[7px] font-bold rounded-full ${badgeColor} hover:cursor-pointer`}
+            onClick={handleIncidentClick}
+          >
+            {incidentsCount} {incidentsCount === 1 ? "incident" : "incidents"}
+          </span>
+        ) : alertsCount > 0 ? (
+          <span
+            className={`absolute top-[-17px] right-[-20px] mt-2 mr-2 px-2 py-1 text-white text-[7px] leading-[7px] font-bold rounded-full ${badgeColor} hover:cursor-pointer`}
+            onClick={handleAlertClick}
+          >
+            {alertsCount} {alertsCount === 1 ? "alert" : "alerts"}
+          </span>
+        ) : (
+          <></>
+        )}
+        <div className="flex flex-wrap gap-1">
+          {data?.applications?.map((app) => {
+            const color = getColorForUUID(app.id);
+            return (
+              <Badge key={app.id} color={color}>
+                {app.name}
+              </Badge>
+            );
+          })}
+        </div>
+      </div>
+      
+      <NodeToolbar
+        isVisible
+        position={indicatorsTooltipDirection}
+        // className={clsx("tooltip-ref", !isTooltipReady && "invisible")}
+      >
+        <ServiceIndicatorsTooltip ip={data.ip_address} status={data.status}/>
+      </NodeToolbar>
+      <NodeToolbar
+        isVisible={showDetails}
+        position={tooltipDirection}
+        className={clsx("tooltip-ref", !isTooltipReady && "invisible")}
+      >
+        <ServiceDetailsTooltip data={data} />
+      </NodeToolbar>
+
+      <>
+        <Handle
+          type="source"
+          className={clsx(data.is_manual === true && "!opacity-100")}
+          position={Position.Right}
+          id="right"
+        />
+        <Handle
+          type="target"
+          className={clsx(data.is_manual === true && "!opacity-100")}
+          position={Position.Left}
+          id="left"
+        />
+      </>
+    </>
+  );
+}
