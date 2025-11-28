@@ -138,26 +138,25 @@ export function WhitestackNode({ data, selected }: NodeProps<WhitecloudNodeType>
     <>
       <div
         className={clsx(
-          "flex flex-col gap-1 bg-white p-4 border-2 border-gray-200 rounded-xl shadow-lg relative transition-colors",
+          "flex flex-col justify-center items-center gap-1 bg-white p-4 border-2 border-gray-200 rounded-xl shadow-lg relative transition-colors",
           selected && "border-tremor-brand"
         )}
         onMouseEnter={() => setShowDetails(true)}
         onMouseLeave={() => setShowDetails(false)}
       >
         
-        <div className="absolute top-2 right-2 text-gray-400">
+        
+        <strong className="text-lg">{data.display_name || data.service}</strong>
+        <div className="text-gray-400">
             <WhitestackDynamicImageProviderIcon
                 className="inline-block"
                 alt="router"
-                height={24}
-                width={24}
+                height={80}
+                width={80}
                 title="router"
                 src={`/whitestack-icons/router.png`}
             />
         </div>
-        
-        <strong className="text-lg">{data.display_name || data.service}</strong>
-        <svg fill="#000000" height="1rem" width="1rem" version="1.1" id="XMLID_142_" xmlns="http://www.w3.org/2000/svg" xmlnsXlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24" xmlSpace="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g id="virtual-machine"> <g> <path d="M15,24H0V9h5V0h15v5h4v15h-9V24z M2,22h11v-2H9v-5H5v-4H2V22z M15,18h7V7h-2v8h-5V18z M11,18h2v-3h-2V18z M15,13h3V7h-7v2 h4V13z M11,13h2v-2h-2V13z M7,13h2v-2H7V13z M7,9h2V5h9V2H7V9z"></path> </g> </g> </g></svg>
         {incidentsCount > 0 ? (
           <span
             className={`absolute top-[-17px] right-[-20px] mt-2 mr-2 px-2 py-1 text-white text-[7px] leading-[7px] font-bold rounded-full ${badgeColor} hover:cursor-pointer`}
