@@ -4,7 +4,7 @@ import { getIncidentWithErrorHandling } from "../getIncidentWithErrorHandling";
 import { getIncidentName } from "@/entities/incidents/lib/utils";
 import { getApplications } from "@/app/(keep)/topology/api";
 import { createServerApiClient } from "@/shared/api/server";
-import { TopologyFilterProvider } from "@/app/(keep)/topology/ui/map/search-bar";
+import { TopologyFilterProvider } from "@/app/(keep)/topology/ui/map/TopologyFilterContext";
 
 type PageProps = {
   params: Promise<{ id: string }>;

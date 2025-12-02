@@ -74,7 +74,8 @@ import { downloadFileFromString } from "@/shared/lib/downloadFileFromString";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { TbTopologyRing } from "react-icons/tb";
 import { useAlerts } from "@/entities/alerts/model";
-import { ServiceSearchBar, useTopologyFilters } from "./search-bar";
+import { ServiceSearchBar} from "./search-bar";
+import { useTopologyFilters } from "./TopologyFilterContext";
 
 const defaultFitViewOptions: FitViewOptions = {
   padding: 0.1,

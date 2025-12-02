@@ -17,7 +17,7 @@ import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useApi } from "@/shared/lib/hooks/useApi";
 import { pullTopology } from "./api";
 import { toast } from "react-toastify";
-import { TopologyFilterProvider } from "./ui/map/search-bar";
+import { TopologyFilterProvider } from "./ui/map/TopologyFilterContext";
 
 export function TopologyPageClient({
   applications,

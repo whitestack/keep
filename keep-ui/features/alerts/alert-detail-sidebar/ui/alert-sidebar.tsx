@@ -27,7 +27,7 @@ import { FormattedContent } from "@/shared/ui/FormattedContent/FormattedContent"
 import { IncidentDto } from "@/entities/incidents/model";
 import { DOCS_CLIPBOARD_COPY_ERROR_PATH } from "@/shared/constants";
 import CollapsibleIncidentsList from "./alert-sidebar-incidents";
-import { TopologyFilterProvider } from "@/app/(keep)/topology/ui/map/search-bar";
+import { TopologyFilterProvider } from "@/app/(keep)/topology/ui/map/TopologyFilterContext";
 
 type AlertSidebarProps = {
   isOpen: boolean;
