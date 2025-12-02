@@ -27,6 +27,7 @@ import { FormattedContent } from "@/shared/ui/FormattedContent/FormattedContent"
 import { IncidentDto } from "@/entities/incidents/model";
 import { DOCS_CLIPBOARD_COPY_ERROR_PATH } from "@/shared/constants";
 import CollapsibleIncidentsList from "./alert-sidebar-incidents";
+import { TopologyFilterProvider } from "@/app/(keep)/topology/ui/map/search-bar";
 
 type AlertSidebarProps = {
   isOpen: boolean;
@@ -280,12 +281,14 @@ export const AlertSidebar = ({
                   onRefresh={handleRefresh}
                 />
                 <Title>Related Services</Title>
-                <TopologySearchProvider>
-                  <TopologyMap
-                    providerIds={alert.providerId ? [alert.providerId] : []}
-                    services={alert.service ? [alert.service] : []}
-                  />
-                </TopologySearchProvider>
+                <TopologyFilterProvider>
+                  <TopologySearchProvider>
+                    <TopologyMap
+                      providerIds={alert.providerId ? [alert.providerId] : []}
+                      services={alert.service ? [alert.service] : []}
+                      />
+                  </TopologySearchProvider>
+                </TopologyFilterProvider>
               </div>
             )}
           </Dialog.Panel>

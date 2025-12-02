@@ -17,6 +17,7 @@ import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useApi } from "@/shared/lib/hooks/useApi";
 import { pullTopology } from "./api";
 import { toast } from "react-toastify";
+import { TopologyFilterProvider } from "./ui/map/search-bar";
 
 export function TopologyPageClient({
   applications,
@@ -71,12 +72,15 @@ export function TopologyPageClient({
       </TabList>
       <TabPanels className="flex-1 flex flex-col">
         <TabPanel className="h-[calc(100vh-10rem)]">
-          <TopologyMap
-            standalone
-            topologyApplications={applications}
-            topologyServices={topologyServices}
-            isVisible={tabIndex === 0}
-          />
+          <TopologyFilterProvider>
+
+            <TopologyMap
+              standalone
+              topologyApplications={applications}
+              topologyServices={topologyServices}
+              isVisible={tabIndex === 0}
+              />
+          </TopologyFilterProvider>
         </TabPanel>
         <TabPanel className="flex-1">
           <ApplicationsList applications={applications} />
