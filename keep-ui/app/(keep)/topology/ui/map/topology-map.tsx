@@ -74,6 +74,7 @@ import { downloadFileFromString } from "@/shared/lib/downloadFileFromString";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { TbTopologyRing } from "react-icons/tb";
 import { useAlerts } from "@/entities/alerts/model";
+import { ServiceSearchBar } from "./search-bar";
 
 const defaultFitViewOptions: FitViewOptions = {
   padding: 0.1,
@@ -576,6 +577,7 @@ export function TopologyMap({
     <>
       <div className="flex flex-col gap-4 h-full">
         <div className="flex justify-between gap-4 items-center">
+          <ServiceSearchBar/>
           <TopologySearchAutocomplete
             wrapperClassName="w-full flex-1"
             includeApplications={true}
