@@ -74,7 +74,7 @@ import { downloadFileFromString } from "@/shared/lib/downloadFileFromString";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { TbTopologyRing } from "react-icons/tb";
 import { useAlerts } from "@/entities/alerts/model";
-import { ServiceSearchBar } from "./search-bar";
+import { ServiceSearchBar, useTopologyFilters } from "./search-bar";
 
 const defaultFitViewOptions: FitViewOptions = {
   padding: 0.1,
@@ -133,6 +133,7 @@ export function TopologyMap({
     setSelectedApplicationIds,
   } = useTopologySearchContext();
 
+  const { filter, setFilter } = useTopologyFilters();
   // if initialSelectedApplicationIds is provided, set it as selectedApplicationIds
   useEffect(() => {
     if (initialSelectedApplicationIds) {
@@ -465,7 +466,7 @@ export function TopologyMap({
       }
 
       const { nodeMap, edgeMap } = getNodesAndEdgesFromTopologyData(
-        topologyData,
+        topologyData.filter(service => service.display_name.includes(filter)),
         applicationMap,
         allIncidents?.items ?? [],
         allAlerts ?? [],

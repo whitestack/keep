@@ -4,6 +4,7 @@ import { getIncidentWithErrorHandling } from "../getIncidentWithErrorHandling";
 import { getIncidentName } from "@/entities/incidents/lib/utils";
 import { getApplications } from "@/app/(keep)/topology/api";
 import { createServerApiClient } from "@/shared/api/server";
+import { TopologyFilterProvider } from "@/app/(keep)/topology/ui/map/search-bar";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -26,22 +27,26 @@ export default async function IncidentTopologyPage(props: PageProps) {
     );
 
     return (
-      <main className="h-[calc(100vh-28rem)]">
-        <TopologySearchProvider>
-          <TopologyMap
-            selectedApplicationIds={[relevantApplication?.id || ""]}
-            topologyApplications={applications}
-          />
-        </TopologySearchProvider>
-      </main>
+      <TopologyFilterProvider>
+        <main className="h-[calc(100vh-28rem)]">
+          <TopologySearchProvider>
+            <TopologyMap
+              selectedApplicationIds={[relevantApplication?.id || ""]}
+              topologyApplications={applications}
+              />
+          </TopologySearchProvider>
+        </main>
+      </TopologyFilterProvider>
     );
   } else {
     return (
-      <main className="h-[calc(100vh-28rem)]">
-        <TopologySearchProvider>
-          <TopologyMap services={incident.services} />
-        </TopologySearchProvider>
-      </main>
+      <TopologyFilterProvider>
+        <main className="h-[calc(100vh-28rem)]">
+          <TopologySearchProvider>
+            <TopologyMap services={incident.services} />
+          </TopologySearchProvider>
+        </main>
+      </TopologyFilterProvider>
     );
   }
 }
