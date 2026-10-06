@@ -132,16 +132,37 @@ class TopologiesService:
             service_instance = session.exec(query).first()
             if not service_instance:
                 return []
+            
+            visited = set()  # avoid infinite loops
+            result = []
 
-            services = session.exec(
-                select(TopologyServiceDependency)
-                .where(
-                    TopologyServiceDependency.depends_on_service_id
-                    == service_instance.id
-                )
-                .options(joinedload(TopologyServiceDependency.service))
-            ).all()
-            services = [service_instance, *[service.service for service in services]]
+            def dfs(service):
+                if service.id in visited:
+                    return
+
+                visited.add(service.id)
+                result.append(service)
+
+                deps = session.exec(
+                    select(TopologyServiceDependency)
+                    .where(TopologyServiceDependency.depends_on_service_id == service.id)
+                    .options(joinedload(TopologyServiceDependency.service))
+                ).all()
+
+                for dependency in deps:
+                    dfs(dependency.service)
+
+            dfs(service_instance)
+            return result
+            # services = session.exec(
+            #     select(TopologyServiceDependency)
+            #     .where(
+            #         TopologyServiceDependency.depends_on_service_id
+            #         == service_instance.id
+            #     )
+            #     .options(joinedload(TopologyServiceDependency.service))
+            # ).all()
+            # services = [service_instance, *[service.service for service in services]]
         else:
             # Fetch services for the tenant
             services = session.exec(
