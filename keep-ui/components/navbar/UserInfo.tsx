@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Menu } from "@headlessui/react";
 import { LinkWithIcon } from "components/LinkWithIcon";
 import { Session } from "next-auth";
@@ -14,6 +15,7 @@ import { useSignOut } from "@/shared/lib/hooks/useSignOut";
 import { FaSlack } from "react-icons/fa";
 import { ThemeControl } from "@/shared/ui";
 import { HiOutlineDocumentText } from "react-icons/hi2";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 
 const ONBOARDING_FLOW_ID = "flow_FHDz1hit";
 
@@ -24,6 +26,7 @@ type UserDropdownProps = {
 const UserDropdown = ({ session }: UserDropdownProps) => {
   const { data: configData } = useConfig();
   const signOut = useSignOut();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const { refs, floatingStyles } = useFloating({
     placement: "right-end",
     strategy: "fixed",
@@ -36,12 +39,16 @@ const UserDropdown = ({ session }: UserDropdownProps) => {
   const { name, image, email } = user;
 
   const isNoAuth = configData?.AUTH_TYPE === AuthType.NOAUTH;
+  // Self-service password change is only supported for local (DB) accounts.
+  const canChangePassword = configData?.AUTH_TYPE === AuthType.DB;
   return (
-    <Menu as="li" ref={refs.setReference} className="w-full">
+    <Menu as="li" ref={refs.setReference} className="min-w-0 flex-1">
       <Menu.Button className="flex items-center justify-between w-full text-sm pl-2.5 pr-2 py-1 text-gray-700 hover:bg-stone-200/50 font-medium rounded-lg hover:text-orange-400 focus:ring focus:ring-orange-300 group capitalize">
-        <span className="space-x-3 flex items-center w-full">
-          <UserAvatar image={image} name={name ?? email} />{" "}
-          <Subtitle className="truncate">{name ?? email}</Subtitle>
+        <span className="space-x-3 flex items-center min-w-0 flex-1">
+          <span className="flex-shrink-0">
+            <UserAvatar image={image} name={name ?? email} />
+          </span>
+          <Subtitle className="truncate block">{name ?? email}</Subtitle>
         </span>
       </Menu.Button>
 
@@ -63,6 +70,17 @@ const UserDropdown = ({ session }: UserDropdownProps) => {
               </Menu.Item>
             </li>
           )}
+          {canChangePassword && (
+            <li>
+              <Menu.Item
+                as="button"
+                className="ui-active:bg-orange-400 ui-active:text-white ui-not-active:text-gray-900 group flex w-full items-center rounded-md px-2 py-2 text-sm"
+                onClick={() => setIsChangePasswordOpen(true)}
+              >
+                Change Password
+              </Menu.Item>
+            </li>
+          )}
           {!isNoAuth && (
             <li>
               <Menu.Item
@@ -76,6 +94,12 @@ const UserDropdown = ({ session }: UserDropdownProps) => {
           )}
         </div>
       </Menu.Items>
+      {canChangePassword && (
+        <ChangePasswordModal
+          isOpen={isChangePasswordOpen}
+          onClose={() => setIsChangePasswordOpen(false)}
+        />
+      )}
     </Menu>
   );
 };
@@ -116,9 +140,9 @@ export const UserInfo = ({ session }: UserInfoProps) => {
             Docs
           </LinkWithIcon>
         </li>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
           {session && <UserDropdown session={session} />}
-          <ThemeControl className="text-sm size-10 flex items-center justify-center font-medium rounded-lg focus:ring focus:ring-orange-300 hover:!bg-stone-200/50" />
+          <ThemeControl className="text-sm size-10 flex-shrink-0 flex items-center justify-center font-medium rounded-lg focus:ring focus:ring-orange-300 hover:!bg-stone-200/50" />
         </div>
       </ul>
     </>

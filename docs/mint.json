@@ -115,6 +115,7 @@
           "pages": [
             "workflows/examples/autosupress",
             "workflows/examples/buisnesshours",
+            "workflows/examples/continue-on-error",
             "workflows/examples/create-servicenow-tickets",
             "workflows/examples/highsev",
             "workflows/examples/update-servicenow-tickets"
@@ -266,7 +267,8 @@
             "providers/documentation/youtrack-provider",
             "providers/documentation/zabbix-provider",
             "providers/documentation/zenduty-provider",
-            "providers/documentation/zoom-provider"
+            "providers/documentation/zoom-provider",
+            "providers/documentation/zoom_chat-provider"
           ]
         },
         "providers/adding-a-new-provider"
@@ -288,6 +290,7 @@
             "deployment/authentication/keycloak-auth",
             "deployment/authentication/oauth2proxy-auth",
             "deployment/authentication/oauth2-proxy-gitlab",
+            "deployment/authentication/okta-auth",
             "deployment/authentication/onelogin-auth"
           ]
         },
@@ -297,7 +300,8 @@
             "deployment/provision/overview",
             "deployment/provision/provider",
             "deployment/provision/workflow",
-            "deployment/provision/dashboard"
+            "deployment/provision/dashboard",
+            "deployment/provision/mapping"
           ]
         },
         "deployment/secret-store",

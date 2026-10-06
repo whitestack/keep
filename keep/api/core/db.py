@@ -103,6 +103,9 @@ ALLOWED_INCIDENT_FILTERS = [
     "assignee",
 ]
 KEEP_AUDIT_EVENTS_ENABLED = config("KEEP_AUDIT_EVENTS_ENABLED", cast=bool, default=True)
+KEEP_CUSTOM_DEDUPLICATION_ENABLED = config(
+    "KEEP_CUSTOM_DEDUPLICATION_ENABLED", cast=bool, default=True
+)
 
 INTERVAL_WORKFLOWS_RELAUNCH_TIMEOUT = timedelta(minutes=60)
 WORKFLOWS_TIMEOUT = timedelta(minutes=120)
@@ -1395,17 +1398,14 @@ def batch_enrich(
             ).all()
         }
 
-        # Prepare bulk update for existing enrichments
-        to_update = []
+        # Prepare bulk operations
         to_create = []
         audit_entries = []
 
         for fingerprint in fingerprints:
             existing = existing_enrichments.get(fingerprint)
 
-            if existing:
-                to_update.append(existing.id)
-            else:
+            if not existing:
                 # For new entries
                 to_create.append(
                     AlertEnrichment(
@@ -1426,14 +1426,16 @@ def batch_enrich(
                     )
                 )
 
-        # Bulk update in a single query
-        if to_update:
-            stmt = (
-                update(AlertEnrichment)
-                .where(AlertEnrichment.id.in_(to_update))
-                .values(enrichments=enrichments)
-            )
-            session.execute(stmt)
+        # Merge per fingerprint, matching _enrich_entity pattern
+        if existing_enrichments:
+            for fingerprint, existing in existing_enrichments.items():
+                merged = {**existing.enrichments, **enrichments}
+                stmt = (
+                    update(AlertEnrichment)
+                    .where(AlertEnrichment.id == existing.id)
+                    .values(enrichments=merged)
+                )
+                session.execute(stmt)
 
         # Bulk insert new enrichments
         if to_create:
@@ -2140,10 +2142,32 @@ def update_user_role(tenant_id, username, role):
             .where(User.tenant_id == tenant_id)
             .where(User.username == username)
         ).first()
-        if user and user.role != role:
+        if not user:
+            return None
+        if user.role != role:
             user.role = role
             session.add(user)
             session.commit()
+            session.refresh(user)
+    return user
+
+
+def update_user_password(tenant_id, username, password):
+    from keep.api.models.db.user import User
+
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+    with Session(engine) as session:
+        user = session.exec(
+            select(User)
+            .where(User.tenant_id == tenant_id)
+            .where(User.username == username)
+        ).first()
+        if not user:
+            return None
+        user.password_hash = password_hash
+        session.add(user)
+        session.commit()
+        session.refresh(user)
     return user
 
 
@@ -2563,6 +2587,13 @@ def get_deduplication_rule_by_id(tenant_id, rule_id: str):
 
 
 def get_custom_deduplication_rule(tenant_id, provider_id, provider_type):
+    # check the custom deduplication flag here so every caller behaves the same
+    if not KEEP_CUSTOM_DEDUPLICATION_ENABLED:
+        return None
+    # alerts ingested without a provider are attributed to the "keep" provider.
+    # normalizing here so all callers resolve the same rule row
+    if not provider_type:
+        provider_type = "keep"
     with Session(engine) as session:
         rule = session.exec(
             select(AlertDeduplicationRule)

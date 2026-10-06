@@ -101,6 +101,43 @@ Keep is highly configurable through environment variables. This allows you to cu
 | **KEEP_FORCE_RESET_DEFAULT_PASSWORD** |               Forces reset of default user password               |    No    |    "false"    |                 "true" or "false"                  |
 |       **KEEP_DEFAULT_API_KEYS**       |       Comma-separated list of default API keys to provision       |    No    |      ""       |    Format: "name:role:secret,name:role:secret"     |
 
+### Service Mesh (Internal Alert Ingestion)
+
+<Info>
+  These settings allow trusted services within the same Kubernetes cluster to
+  POST alerts to Keep without requiring a Keep API key. This is intended for
+  service-to-service communication where network-level authentication (e.g.
+  Istio mTLS with AuthorizationPolicy) ensures only authorized callers can
+  reach Keep's alert ingestion endpoints.
+</Info>
+
+|                   Env var                    |                                   Purpose                                    | Required | Default Value |    Valid options     |
+| :------------------------------------------: | :--------------------------------------------------------------------------: | :------: | :-----------: | :-----------------: |
+| **KEEP_ALLOW_MESH_ALERT_INGESTION**          | Allows unauthenticated POST requests to `/alerts/event*` endpoints           |    No    |    "false"    | "true" or "false"   |
+
+When `KEEP_ALLOW_MESH_ALERT_INGESTION` is set to `"true"`, requests to `/alerts/event*` that do not carry an API key or bearer token are accepted and authenticated as an internal service with the `webhook` role.
+
+Calling services can optionally set the `X-Service-Name` HTTP header to identify themselves in Keep's logs and audit trail:
+
+```bash
+curl -X POST http://keep-backend:8080/alerts/event \
+  -H "Content-Type: application/json" \
+  -H "X-Service-Name: my-service" \
+  -d '[{"id":"alert-1","name":"Example Alert","severity":"info","status":"firing","source":["my-service"]}]'
+```
+
+The authenticated entity will have:
+- **email**: `service:<X-Service-Name header value>` (defaults to `service:unknown` if the header is not set)
+- **role**: `webhook` (grants `write:alert` and `write:incident` scopes)
+
+<Warning>
+  This feature bypasses API key authentication for the alert ingestion
+  endpoints. You **must** pair it with network-level access control (such as
+  Istio AuthorizationPolicy) to restrict which services can reach these
+  endpoints. Without network-level enforcement, any client that can reach
+  Keep's backend can POST alerts.
+</Warning>
+
 ### Secrets Management
 
 <Info>
@@ -167,6 +204,7 @@ Keep is highly configurable through environment variables. This allows you to cu
 |    **OPENAI_MODEL_NAME**    |       Model name to use for OpenAI requests        |    No    | "gpt-4o-2024-08-06" | Valid OpenAI model name (e.g., "gpt-4o", "gpt-4o-mini", ...) |       Both       |
 | **OPEN_AI_ORGANIZATION_ID** |        Organization ID for OpenAI services         |    No    |        None         |                 Valid OpenAI organization ID                 |       Both       |
 |     **OPENAI_BASE_URL**     | Base URL for OpenAI API (useful for LiteLLM proxy) |    No    |        None         |          Valid URL (e.g., "http://localhost:4000")           |       Both       |
+| **KEEP_AI_DISABLE_TEMPERATURE** | Omit the `temperature` parameter from AI requests (some models, e.g. reasoning models, only accept the default and reject explicit values) |    No    |        false        |                       true / false                       |     Backend      |
 
 <Tip>
   For various different LLM based features, we also require to set these
@@ -242,6 +280,7 @@ Keep is highly configurable through environment variables. This allows you to cu
 |      **REDIS**     |    Redis enabled      |    No    |     false     |        true or false         |
 |   **REDIS_HOST**   | Redis server hostname |    No    |  "localhost"  | Valid hostname or IP address |
 |   **REDIS_PORT**   |   Redis server port   |    No    |     6379      |      Valid port number       |
+|    **REDIS_DB**    |  Redis database slot  |    No    |       0       |        Valid DB number       |
 | **REDIS_USERNAME** |    Redis username     |    No    |     None      |    Valid username string     |
 | **REDIS_PASSWORD** |    Redis password     |    No    |     None      |    Valid password string     |
 
@@ -256,6 +295,7 @@ Keep is highly configurable through environment variables. This allows you to cu
 |             **REDIS**               |        Redis enabled        |    No    |       false         |              true or false                  |
 |      **REDIS_SENTINEL_HOSTS**       |   Redis sentinel server(s)  |    No    |  "localhost:26379"  | "host1:port1,host2:port2" (comma-separated) |
 |   **REDIS_SENTINEL_SERVICE_NAME**   | Redis sentinel service name |    No    |    "mymaster"       |         Valid service name string           |
+|            **REDIS_DB**             |     Redis database slot     |    No    |         0           |             Valid DB number                  |
 |         **REDIS_USERNAME**          |      Redis username         |    No    |       None          |           Valid username string             |
 |         **REDIS_PASSWORD**          |      Redis password         |    No    |       None          |           Valid password string             |
 
@@ -334,6 +374,7 @@ These endpoints are rate-limited according to the `KEEP_LIMIT_CONCURRENCY` setti
 | **HIDE_NAVBAR_MAINTENANCE_WINDOW** | Hides the maintenance window page from the navigation bar in the UI | No       | None          | "true"          |
 | **HIDE_NAVBAR_AI_PLUGINS**         | Hides the AI plugins page from the navigation bar in the UI         | No       | None          | "true"          |
 | **KEEP_WF_LIST_EXTENDED_INFO**     | Use a list instead a button to show the complete execution list     | No       | "true"        | "true", "false" |
+| **ALERT_SIDEBAR_FIELDS**           | Specifies a list of fields to show in the sidebar.                  | No       | service,source,description,message,fingerprint,url,incidents,timeline,relatedServices | Valid list of fields |
 
 ### Authentication
 

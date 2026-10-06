@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 import importlib
 from itertools import cycle
 from unittest.mock import MagicMock, patch
@@ -10,6 +10,8 @@ from sqlalchemy import and_, desc, distinct, func
 
 import keep.api.consts
 
+
+from keep.api.models.db.incident import Incident
 from keep.api.bl.incidents_bl import IncidentBl
 from keep.api.bl.maintenance_windows_bl import MaintenanceWindowsBl
 from keep.api.core.db import (
@@ -1792,6 +1794,51 @@ def test_incident_auto_resolve_only_if_active(db_session, create_alert):
         )
         assert incident_bl_mock.call_count == 2 # firing and acknowledged
 
+def test_get_incidents_by_cel_is_visible_filter(db_session):
+    """
+    Tests that is_visible is correctly stored and queryable on Incident objects.
+    """
+    visible = create_incident_from_dict(
+        SINGLE_TENANT_UUID,
+        {
+            "user_generated_name": "Visible Incident",
+            "user_summary": "Test visible summary",
+            "generated_summary": "Test visible summary gen",
+            "is_visible": True,
+        },
+    )
+    not_visible = create_incident_from_dict(
+        SINGLE_TENANT_UUID,
+        {
+            "user_generated_name": "Not Visible Incident",
+            "user_summary": "Test not visible summary",
+            "generated_summary": "Test not visible summary gen",
+            "is_visible": False,
+        },
+    )
+
+    assert visible.is_visible is True
+    assert not_visible.is_visible is False
+
+    all_incidents = db_session.query(Incident).filter(
+        Incident.tenant_id == SINGLE_TENANT_UUID,
+    ).all()
+    assert len(all_incidents) == 2
+
+    visible_only = db_session.query(Incident).filter(
+        Incident.tenant_id == SINGLE_TENANT_UUID,
+        Incident.is_visible == True,
+    ).all()
+    assert len(visible_only) == 1
+    assert visible_only[0].user_generated_name == "Visible Incident"
+
+    not_visible_only = db_session.query(Incident).filter(
+        Incident.tenant_id == SINGLE_TENANT_UUID,
+        Incident.is_visible == False,
+    ).all()
+    assert len(not_visible_only) == 1
+    assert not_visible_only[0].user_generated_name == "Not Visible Incident"
+
 def test_incident_not_created_maintenance(
     db_session,
     create_alert,
@@ -1934,3 +1981,80 @@ def test_create_incident_after_maintenance_window(
     )
     assert total == 1
     assert incidents[total-1].user_generated_name == "Rule-test-after-mw"
+
+
+def test_incident_dto_is_visible_from_db(db_session, create_alert):
+    """Test that is_visible is correctly mapped in IncidentDto.from_db_incident()."""
+    from keep.api.models.db.incident import Incident as DbIncident
+    from keep.api.models.incident import IncidentDto
+    from keep.api.models.db.incident import IncidentSeverity, IncidentStatus
+    import datetime
+
+    # Create a DB incident with is_visible=False
+    db_incident = DbIncident(
+        id=uuid4(),
+        tenant_id=SINGLE_TENANT_UUID,
+        user_generated_name="Test invisible incident",
+        severity=IncidentSeverity.INFO.order,
+        status=IncidentStatus.FIRING.value,
+        is_visible=False,
+        is_predicted=False,
+        is_candidate=False,
+        alerts_count=0,
+        creation_time=datetime.datetime.utcnow(),
+        start_time=datetime.datetime.utcnow(),
+        last_seen_time=datetime.datetime.utcnow(),
+    )
+    db_session.add(db_incident)
+    db_session.commit()
+
+    # Convert to DTO
+    dto = IncidentDto.from_db_incident(db_incident)
+    assert dto.is_visible is False, "is_visible should be False when DB has is_visible=False"
+
+    # Also test the default (True)
+    db_incident2 = DbIncident(
+        id=uuid4(),
+        tenant_id=SINGLE_TENANT_UUID,
+        user_generated_name="Test visible incident",
+        severity=IncidentSeverity.INFO.order,
+        status=IncidentStatus.FIRING.value,
+        is_visible=True,
+        is_predicted=False,
+        is_candidate=False,
+        alerts_count=0,
+        creation_time=datetime.datetime.utcnow(),
+        start_time=datetime.datetime.utcnow(),
+        last_seen_time=datetime.datetime.utcnow(),
+    )
+    db_session.add(db_incident2)
+    db_session.commit()
+
+    dto2 = IncidentDto.from_db_incident(db_incident2)
+    assert dto2.is_visible is True, "is_visible should be True when DB has is_visible=True"
+
+
+def test_incident_dto_is_visible_to_db():
+    """Test that is_visible is correctly mapped in IncidentDto.to_db_incident()."""
+    from keep.api.models.incident import IncidentDto
+    from keep.api.models.db.incident import IncidentSeverity, IncidentStatus
+    import datetime
+
+    dto = IncidentDto(
+        id=uuid4(),
+        user_generated_name="Test",
+        severity=IncidentSeverity.INFO,
+        status=IncidentStatus.FIRING.value,
+        is_predicted=False,
+        is_candidate=False,
+        is_visible=False,
+        alerts_count=0,
+        alert_sources=[],
+        services=[],
+        creation_time=datetime.datetime.utcnow(),
+        start_time=datetime.datetime.utcnow(),
+        last_seen_time=datetime.datetime.utcnow(),
+    )
+
+    db_incident = dto.to_db_incident()
+    assert db_incident.is_visible is False, "to_db_incident should preserve is_visible=False"

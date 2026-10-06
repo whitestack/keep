@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type AlertDto, type AlertsQuery } from "@/entities/alerts/model";
 import { usePresets, type Preset } from "@/entities/presets/model";
 import { AlertHistoryModal } from "@/features/alerts/alert-history";
@@ -61,6 +61,7 @@ export default function Alerts({ presetName, initialFacets }: AlertsProps) {
     [providersData.installed_providers]
   );
 
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   // hooks for the note and ticket modals
   const [noteModalAlert, setNoteModalAlert] = useState<AlertDto | null>();
@@ -96,32 +97,53 @@ export default function Alerts({ presetName, initialFacets }: AlertsProps) {
     facetsPanelRefreshToken,
   } = useAlertsTableData(alertsTableDataQuery);
 
+  // Track which fingerprint has already been resolved so that a background
+  // alerts re-fetch (polling / WebSocket) doesn't fire "not found" after the
+  // modal was successfully opened.
+  const resolvedFingerprintRef = useRef<string | null>(null);
+
   useEffect(() => {
     const fingerprint = searchParams?.get("alertPayloadFingerprint");
     const enrich = searchParams?.get("enrich");
-    if (fingerprint && enrich && alerts) {
+
+    // Reset when the user navigates to a different fingerprint.
+    if (fingerprint !== resolvedFingerprintRef.current) {
+      resolvedFingerprintRef.current = null;
+    }
+
+    // Only act once data is actually settled: either we have alerts to search
+    // through, or the backend confirmed there are zero results (totalCount === 0).
+    // This guards against a 3-render cascade in useLastAlerts where `alerts`
+    // briefly equals [] while `isLoading` is already false but the React state
+    // carrying the actual results hasn't been flushed yet.
+    const dataSettled = alerts && !alertsLoading && (alerts.length > 0 || totalCount === 0);
+
+    if (fingerprint && enrich && dataSettled) {
       const alert = alerts?.find((alert) => alert.fingerprint === fingerprint);
       if (alert) {
+        resolvedFingerprintRef.current = fingerprint;
         setEnrichAlertModal(alert);
         setIsEnrichSidebarOpen(true);
-      } else {
+      } else if (!resolvedFingerprintRef.current) {
         showErrorToast(null, "Alert fingerprint not found");
         resetUrlAfterModal();
       }
-    } else if (fingerprint && alerts) {
+    } else if (fingerprint && dataSettled) {
       const alert = alerts?.find((alert) => alert.fingerprint === fingerprint);
       if (alert) {
+        resolvedFingerprintRef.current = fingerprint;
         setViewAlertModal(alert);
-      } else {
+      } else if (!resolvedFingerprintRef.current) {
         showErrorToast(null, "Alert fingerprint not found");
         resetUrlAfterModal();
       }
-    } else if (alerts) {
+    } else if (alerts && !alertsLoading) {
+      resolvedFingerprintRef.current = null;
       setViewAlertModal(null);
       setEnrichAlertModal(null);
       setIsEnrichSidebarOpen(false);
     }
-  }, [searchParams, alerts]);
+  }, [searchParams, alerts, alertsLoading, totalCount]);
 
   const alertsQueryStateRef = useRef(alertsQueryState);
 
@@ -144,18 +166,16 @@ export default function Alerts({ presetName, initialFacets }: AlertsProps) {
   );
 
   const resetUrlAfterModal = useCallback(() => {
-    const currentParams = new URLSearchParams(window.location.search);
+    const currentParams = new URLSearchParams(searchParams?.toString() ?? "");
     Array.from(currentParams.keys())
       .filter((paramKey) => paramKey !== "cel")
       .forEach((paramKey) => currentParams.delete(paramKey));
-    let url = `${window.location.pathname}`;
-
-    if (currentParams.toString()) {
-      url += `?${currentParams.toString()}`;
-    }
+    const url = currentParams.toString()
+      ? `${pathname}?${currentParams.toString()}`
+      : pathname;
 
     router.replace(url);
-  }, [router]);
+  }, [router, pathname, searchParams]);
 
   // if we don't have presets data yet, just show loading
   if (!selectedPreset && isPresetsLoading) {
