@@ -16,7 +16,8 @@ COPY keep-ui/package*.json /app/
 COPY ./keep-ui/ /app
 
 # Install dependencies in /app
-RUN npm install
+RUN npm install --legacy-peer-deps
+RUN npm install webpack --legacy-peer-deps
 # Install next globally and create a symlink
 RUN npm install -g next
 RUN ln -s /usr/local/lib/node_modules/next/dist/bin/next /usr/local/bin/next || echo "next binary already linked to bin"
