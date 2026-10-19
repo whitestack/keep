@@ -137,7 +137,7 @@ export const NoiseReductionLinks = ({ session }: NoiseReductionLinksProps) => {
         >
           <li>
             <LinkWithIcon
-              href="/topology"
+              href="/topology-v2"
               icon={TbTopologyRing}
               isBeta={!topologyData || topologyData.length === 0}
               count={
@@ -145,7 +145,7 @@ export const NoiseReductionLinks = ({ session }: NoiseReductionLinksProps) => {
               }
               testId="service-topology"
             >
-              <Subtitle className="text-xs">Service Topology</Subtitle>
+              <Subtitle className="text-xs">Whitecloud Topology</Subtitle>
             </LinkWithIcon>
           </li>
         </TogglableLink>
