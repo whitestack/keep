@@ -19,6 +19,7 @@ export const DynamicImageProviderIcon = (props: any) => {
   const [imageSrc, setImageSrc] = useState<string | undefined>(
     blobCache[providerType] ?? src ?? fallbackIcon
   );
+  const [triedPng, setTriedPng] = useState(false);
 
   useEffect(() => {
     if (!providerType || !providers) return;
@@ -54,7 +55,14 @@ export const DynamicImageProviderIcon = (props: any) => {
       {...rest}
       alt={providerType || "No provider icon found"}
       src={imageSrc}
-      onError={() => setImageSrc(fallbackIcon)}
+      onError={() => {
+        if (!triedPng && imageSrc?.startsWith("/icons/")) {
+          setTriedPng(true);
+          setImageSrc(imageSrc.replace(/\.svg$/i, ".png"));
+        } else {
+          setImageSrc(fallbackIcon);
+        }
+      }}
       unoptimized
     />
   );
