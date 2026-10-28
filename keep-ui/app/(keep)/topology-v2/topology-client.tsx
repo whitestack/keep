@@ -15,8 +15,10 @@ import { TopologySearchContext } from "./TopologySearchContext";
 import { TopologyApplication, TopologyService } from "./model";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { useApi } from "@/shared/lib/hooks/useApi";
-import { pullTopology } from "./api";
 import { toast } from "react-toastify";
+import { TopologyFiltersValue } from "./topology-filter-panel";
+import { getTopology, pullTopology } from "./api";
+
 
 export function TopologyPageClient({
   applications,
@@ -29,11 +31,28 @@ export function TopologyPageClient({
   const { selectedObjectId } = useContext(TopologySearchContext);
   const api = useApi();
 
+  const [topologyFilters, setTopologyFilters] =
+    useState<TopologyFiltersValue>({
+      vmNameRegex: "",
+      hypervisorName: "",
+      maxVmsPerHypervisor: "",
+    });
+
+
+  const handleFiltersChange = async (filters: TopologyFiltersValue) => {
+    setTopologyFilters(filters);
+  };
+
+
+
   const handlePullTopology = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     try {
-      await pullTopology(api);
+      console.log("Pulling topology from providers...");
+      console.log("API client:", api.getApiBaseUrl());
+      console.log('Filters:', topologyFilters);
+      // await pullTopology(api);
       toast.success("Topology pull initiated");
     } catch (error) {
       toast.error("Failed to pull topology");
@@ -76,6 +95,8 @@ export function TopologyPageClient({
             topologyApplications={applications}
             topologyServices={topologyServices}
             isVisible={tabIndex === 0}
+            filters={topologyFilters}
+            onFiltersChange={handleFiltersChange}
           />
         </TabPanel>
         <TabPanel className="flex-1">

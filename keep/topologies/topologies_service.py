@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 from typing import List, Optional
@@ -113,6 +114,178 @@ def validate_non_manual_exists(
 
 
 class TopologiesService:
+    
+    @staticmethod
+    def _filter_whitecloud_topology_services(
+        services: list[TopologyService],
+        vm_name_regex: Optional[str] = None,
+        hypervisor_name: Optional[str] = None,
+        max_vms_per_hypervisor: Optional[int] = None,
+    ) -> list[TopologyService]:
+        """Filter VMs and preserve their recursively connected dependencies."""
+
+        # Index services by database ID.
+        services_by_id = {
+            service.id: service
+            for service in services
+            if service.id is not None
+        }
+
+        # Build reverse edges: target service ID -> services that depend on it.
+        dependents_by_id: dict[int, list[TopologyService]] = {}
+
+        for service in services:
+            for dependency in service.dependencies:
+                dependents_by_id.setdefault(
+                    dependency.depends_on_service_id, []
+                ).append(service)
+
+        # Identify VMs using the fields produced by the OpenStack provider.
+        vms = [
+            service
+            for service in services
+            if service.category == "instance"
+        ]
+
+        if vm_name_regex:
+            try:
+                vm_pattern = re.compile(vm_name_regex, re.IGNORECASE)
+            except re.error as exc:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Invalid VM name regex: {exc}",
+                ) from exc
+
+            vms = [
+                vm for vm in vms
+                if vm_pattern.search(vm.display_name)
+            ]
+
+        # If a hypervisor was specified, restrict the VMs to that hypervisor.
+        if hypervisor_name:
+            matching_hypervisors = {
+                service.id
+                for service in services
+                if service.category == "hypervisor"
+                and hypervisor_name.casefold() in service.display_name.casefold()
+                and service.id is not None
+            }
+
+            # Find ports connected to the matching hypervisors.
+            matching_port_ids = {
+                service.id
+                for service in services
+                if service.category == "port"
+                and service.id is not None
+                and any(
+                    dependency.depends_on_service_id in matching_hypervisors
+                    for dependency in service.dependencies
+                )
+            }
+
+            # Keep VMs connected to those ports.
+            vms = [
+                vm
+                for vm in vms
+                if any(
+                    dependency.depends_on_service_id in matching_port_ids
+                    for dependency in vm.dependencies
+                )
+            ]
+        # Apply a deterministic per-hypervisor limit.
+        
+        if max_vms_per_hypervisor is not None:
+            if max_vms_per_hypervisor < 1:
+                raise HTTPException(
+                    status_code=422,
+                    detail="max_vms_per_hypervisor must be at least 1",
+                )
+
+            # Map each hypervisor to its directly connected ports.
+            ports_by_hypervisor: dict[int, set[int]] = {}
+
+            for service in services:
+                if service.category != "port" or service.id is None:
+                    continue
+
+                for dependency in service.dependencies:
+                    hypervisor_id = dependency.depends_on_service_id
+                    target = services_by_id.get(hypervisor_id)
+
+                    if target and target.category == "hypervisor":
+                        ports_by_hypervisor.setdefault(
+                            hypervisor_id, set()
+                        ).add(service.id)
+
+            # Map each hypervisor to its connected VMs through their ports.
+            vms_by_hypervisor: dict[int, list[TopologyService]] = {}
+
+            for vm in vms:
+                vm_port_ids = {
+                    dependency.depends_on_service_id
+                    for dependency in vm.dependencies
+                }
+
+                for hypervisor_id, port_ids in ports_by_hypervisor.items():
+                    if vm_port_ids & port_ids:
+                        vms_by_hypervisor.setdefault(
+                            hypervisor_id, []
+                        ).append(vm)
+
+            # Apply the limit independently to each hypervisor.
+            selected_vms: list[TopologyService] = []
+
+            for hypervisor_vms in vms_by_hypervisor.values():
+                selected_vms.extend(
+                    sorted(
+                        hypervisor_vms,
+                        key=lambda vm: (
+                            vm.display_name.casefold(),
+                            vm.id or 0,
+                        ),
+                    )[:max_vms_per_hypervisor]
+                )
+
+            vms = selected_vms
+
+        # No VM/hypervisor criteria means there is nothing to filter here.
+        if (
+            not vm_name_regex
+            and not hypervisor_name
+            and max_vms_per_hypervisor is None
+        ):
+            return services
+
+        # Keep each selected VM and recursively follow its outgoing dependencies:
+        # VM -> port -> OVS -> interface -> ...
+        included_ids: set[int] = set()
+        pending = [
+            vm.id for vm in vms
+            if vm.id is not None
+        ]
+
+        while pending:
+            service_id = pending.pop()
+
+            if service_id in included_ids:
+                continue
+
+            service = services_by_id.get(service_id)
+            if service is None:
+                continue
+
+            included_ids.add(service_id)
+
+            for dependency in service.dependencies:
+                dependency_id = dependency.depends_on_service_id
+                if dependency_id in services_by_id and dependency_id not in included_ids:
+                    pending.append(dependency_id)
+
+        return [
+            service for service in services
+            if service.id in included_ids
+        ]
+    
     @staticmethod
     def get_topology_services(
         tenant_id: str,
@@ -181,6 +354,56 @@ class TopologiesService:
         ]
 
         return service_dtos
+    
+
+    @staticmethod
+    def get_whitecloud_topology_data(
+        tenant_id: str,
+        session: Session,
+        provider_ids: Optional[str] = None,
+        services: Optional[str] = None,
+        environment: Optional[str] = None,
+        include_empty_deps: Optional[bool] = False,
+        vm_name_regex: Optional[str] = None,
+        hypervisor_name: Optional[str] = None,
+        max_vms_per_hypervisor: Optional[int] = None,
+    ) -> List[TopologyServiceDtoOut]:
+        topology_services = TopologiesService.get_topology_services(
+            tenant_id, session, provider_ids, services, environment
+        )
+
+        has_topology_filter = bool(vm_name_regex or hypervisor_name)
+
+        if has_topology_filter:
+            topology_services = TopologiesService._filter_whitecloud_topology_services(
+                topology_services,
+                vm_name_regex=vm_name_regex,
+                hypervisor_name=hypervisor_name,
+                max_vms_per_hypervisor=max_vms_per_hypervisor,
+            )
+
+        # Fetch application IDs for all services in a single query.
+        service_ids = [
+            service.id
+            for service in topology_services
+            if service.id is not None
+        ]
+        service_to_app_ids = get_service_application_ids_dict(
+            session, service_ids
+        )
+
+        logger.info(f"Service to app ids: {service_to_app_ids}")
+
+        return [
+            TopologyServiceDtoOut.from_orm(
+                service,
+                application_ids=service_to_app_ids.get(service.id, []),
+            )
+            for service in topology_services
+            if service.dependencies
+            or include_empty_deps
+            or has_topology_filter
+        ]
 
     @staticmethod
     def get_applications_by_tenant_id(

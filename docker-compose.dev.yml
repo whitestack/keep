@@ -4,6 +4,8 @@ services:
       file: docker-compose.common.yml
       service: keep-frontend-common
     environment:
+      - AUTH_TYPE=DB
+      - NEXTAUTH_SECRET=verysecretkey
       - API_URL=http://keep-backend-dev:8080
       - SENTRY_DISABLED=true
     build:
@@ -19,6 +21,11 @@ services:
     extends:
       file: docker-compose.common.yml
       service: keep-backend-common
+    environment:
+      - AUTH_TYPE=DB
+      - KEEP_JWT_SECRET=verysecretkey
+      - KEEP_DEFAULT_USERNAME=keep
+      - KEEP_DEFAULT_PASSWORD=keep
     build:
       dockerfile: docker/Dockerfile.dev.api
     volumes:
