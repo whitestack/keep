@@ -22,8 +22,8 @@ def test_topology_manual(browser):
         browser.wait_for_timeout(3000)
 
         # Open the Service Topology page
-        browser.get_by_role("link", name="Service Topology").hover()
-        browser.get_by_role("link", name="Service Topology").click()
+        browser.get_by_role("link", name="Whitecloud Topology").hover()
+        browser.get_by_role("link", name="Whitecloud Topology").click()
         browser.wait_for_timeout(2000)  # Added extra wait for page to fully load
 
         max_retries = 5

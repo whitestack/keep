@@ -3,7 +3,6 @@
 
 import {
     Server,
-    Network,
     Monitor,
     CircleCheck,
     CircleAlert,
@@ -12,6 +11,7 @@ import {
     ChevronUp,
     Activity,
     Boxes,
+    Plug
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { TopologyService } from "../../model/models";
@@ -41,12 +41,8 @@ function parseDescription(description?: string | null): Record<string, string> {
 }
 
 function getResourceType(service: TopologyService, fields: Record<string, string>) {
-    const text = `${service.display_name ?? ""} ${service.service ?? ""} ${Object.keys(fields).join(" ")}`.toLowerCase();
-
-    if (text.includes("hypervisor")) return "Hypervisor";
-    if (text.includes("port")) return "Network Port";
-    if (text.includes("instance")) return "Instance";
-    return "Resource";
+    const serviceCategory = service.category?.toLowerCase();
+    return serviceCategory || "resource";
 }
 
 function getStatus(fields: Record<string, string>) {
@@ -70,9 +66,9 @@ const statusStyles = {
 };
 
 function getIcon(type: string) {
-    if (type === "Hypervisor") return Server;
-    if (type === "Network Port") return Network;
-    if (type === "Instance") return Monitor;
+    if (type === "port") return Plug;
+    if (type === "instance") return Monitor;
+    if (type === "hypervisor") return Server;
     return Boxes;
 }
 
@@ -103,7 +99,7 @@ export default function ServiceDetailsCard({ service }: Props) {
                 <div className="min-w-0 flex-1 items-center">
                     <div className="mb-1 flex flex-wrap items-center gap-2">
                         <h2 className="break-words text-base font-semibold tracking-tight">
-                            {service.display_name || service.service || "Unnamed resource"}
+                            {service.display_name || "<Unnamed>"}
                         </h2>
                         <span className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground">
                             {type}
