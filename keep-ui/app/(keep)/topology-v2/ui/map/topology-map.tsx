@@ -52,7 +52,7 @@ import {
   TopologyService,
   TopologyServiceMinimal,
   TopologyApplicationMinimal,
-} from "@/app/(keep)/topology/model";
+} from "@/app/(keep)/topology-v2/model";
 import { TopologySearchAutocomplete } from "../TopologySearchAutocomplete";
 import "@xyflow/react/dist/style.css";
 import { areSetsEqual } from "@/utils/helpers";
@@ -73,6 +73,7 @@ import { downloadFileFromString } from "@/shared/lib/downloadFileFromString";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { TbTopologyRing } from "react-icons/tb";
 import { useAlerts } from "@/entities/alerts/model";
+import { TopologyFilters, TopologyFiltersValue } from "../../topology-filter-panel";
 
 const defaultFitViewOptions: FitViewOptions = {
   padding: 0.1,
@@ -88,6 +89,8 @@ type TopologyMapProps = {
   environment?: string;
   isVisible?: boolean;
   standalone?: boolean;
+  filters?: TopologyFiltersValue;
+  onFiltersChange?: (filters: TopologyFiltersValue) => void;
 };
 
 interface MenuItem {
@@ -105,6 +108,8 @@ export function TopologyMap({
   environment,
   isVisible = true,
   standalone = false,
+  filters,
+  onFiltersChange,
 }: TopologyMapProps) {
   const [initiallyFitted, setInitiallyFitted] = useState(false);
 
@@ -117,6 +122,9 @@ export function TopologyMap({
     providerIds,
     services,
     environment,
+    vmNameRegex: filters?.vmNameRegex,
+    hypervisorName: filters?.hypervisorName,
+    maxVmsPerHypervisor: filters?.maxVmsPerHypervisor,
     initialData: initialTopologyServices,
   });
   const { applications, mutate: mutateApplications } = useTopologyApplications({
@@ -584,6 +592,15 @@ export function TopologyMap({
             placeholder="Search for a service or application"
             onSelect={handleSelectFromSearch}
           />
+          <TopologyFilters
+            value={filters ?? {
+              vmNameRegex: "",
+              hypervisorName: "",
+              maxVmsPerHypervisor: "",
+            }}
+            onApply={(nextFilters) => onFiltersChange?.(nextFilters)}
+          />
+
           {/* Using z-index to overflow the manage selection component */}
           <div className="basis-1/3 relative z-30">
             <MultiSelect

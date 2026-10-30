@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, Query
 from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
@@ -61,6 +61,32 @@ def get_topology_data(
     )
     return topology_data
 
+# GET all topology data
+@router.get(
+    "/whitecloud", description="Get all topology data", response_model=List[TopologyServiceDtoOut]
+)
+def get_whitcloud_topology_data(
+    provider_ids: Optional[str] = None,
+    services: Optional[str] = None,
+    environment: Optional[str] = None,
+    include_empty_deps: Optional[bool] = True,
+    vm_name_regex: Optional[str] = None,
+    hypervisor_name: Optional[str] = None,
+    max_vms_per_hypervisor: Optional[int] = Query(default=3, ge=1),
+    authenticated_entity: AuthenticatedEntity = Depends(
+        IdentityManagerFactory.get_auth_verifier(["read:topology"])
+    ),
+    session: Session = Depends(get_session),
+) -> List[TopologyServiceDtoOut]:
+    tenant_id = authenticated_entity.tenant_id
+    logger.info("Getting topology data", extra={tenant_id: tenant_id})
+    topology_data = TopologiesService.get_whitecloud_topology_data(
+        tenant_id, session, provider_ids, services, environment, include_empty_deps, 
+        vm_name_regex,
+        hypervisor_name,
+        max_vms_per_hypervisor,
+    )
+    return topology_data
 
 @router.get(
     "/applications",
