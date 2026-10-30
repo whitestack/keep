@@ -49,10 +49,7 @@ export function TopologyPageClient({
     e.preventDefault();
     e.stopPropagation();
     try {
-      console.log("Pulling topology from providers...");
-      console.log("API client:", api.getApiBaseUrl());
-      console.log('Filters:', topologyFilters);
-      // await pullTopology(api);
+      await pullTopology(api);
       toast.success("Topology pull initiated");
     } catch (error) {
       toast.error("Failed to pull topology");

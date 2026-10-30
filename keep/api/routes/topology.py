@@ -72,7 +72,7 @@ def get_whitcloud_topology_data(
     include_empty_deps: Optional[bool] = True,
     vm_name_regex: Optional[str] = None,
     hypervisor_name: Optional[str] = None,
-    max_vms_per_hypervisor: Optional[int] = Query(default=None, ge=1),
+    max_vms_per_hypervisor: Optional[int] = Query(default=3, ge=1),
     authenticated_entity: AuthenticatedEntity = Depends(
         IdentityManagerFactory.get_auth_verifier(["read:topology"])
     ),

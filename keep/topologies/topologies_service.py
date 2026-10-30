@@ -120,7 +120,7 @@ class TopologiesService:
         services: list[TopologyService],
         vm_name_regex: Optional[str] = None,
         hypervisor_name: Optional[str] = None,
-        max_vms_per_hypervisor: Optional[int] = None,
+        max_vms_per_hypervisor: Optional[int] = 3,
     ) -> list[TopologyService]:
         """Filter VMs and preserve their recursively connected dependencies."""
 
@@ -372,7 +372,7 @@ class TopologiesService:
             tenant_id, session, provider_ids, services, environment
         )
 
-        has_topology_filter = bool(vm_name_regex or hypervisor_name)
+        has_topology_filter = bool(vm_name_regex or hypervisor_name or max_vms_per_hypervisor is not None)
 
         if has_topology_filter:
             topology_services = TopologiesService._filter_whitecloud_topology_services(

@@ -71,6 +71,13 @@ function ServiceDetailsTooltip({ data }: { data: TopologyService }) {
   );
 }
 
+
+const ICONS_CLASSNAMES: Record<string, string> = {
+  port: "bg-red-300",
+  instance: "bg-orange-300",
+  hypervisor: "bg-green-300",
+  default: "bg-gray-300",
+};
 export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
   const router = useRouter();
   const [showDetails, setShowDetails] = useState(false);
@@ -124,19 +131,33 @@ export function ServiceNode({ data, selected }: NodeProps<ServiceNodeType>) {
         onMouseEnter={() => setShowDetails(true)}
         onMouseLeave={() => setShowDetails(false)}
       >
-        {data.category && (
-          <div className="absolute top-2 right-2 text-gray-400">
-            <DynamicImageProviderIcon
-              className="inline-block"
-              alt={data.category}
-              height={24}
-              width={24}
+        <div className="flex items-center gap-3">
+          <strong className="min-w-0 flex-1 break-words text-lg font-semibold leading-tight">
+            {data.display_name || "<Unnamed>"}
+          </strong>
+
+          {data.category && (
+            <div
+              className={`
+                flex h-11 w-11 shrink-0
+                items-center justify-center
+                rounded-lg ${ICONS_CLASSNAMES[data.category] || ICONS_CLASSNAMES.default}
+                ring-1 ring-inset ring-gray-200
+                dark:bg-blue-500/10 dark:ring-gray-700
+              `}
               title={data.category}
-              src={`/icons/${data.category.toLowerCase()}-icon.png`}
-            />
-          </div>
-        )}
-        <strong className="text-lg">{data.display_name || data.service}</strong>
+            >
+              <DynamicImageProviderIcon
+                className="block object-contain"
+                alt={data.category}
+                height={28}
+                width={28}
+                title={data.category}
+                src={`/icons/${data.category.toLowerCase()}-icon.svg`}
+              />
+            </div>
+          )}
+        </div>
         {incidentsCount > 0 ? (
           <span
             className={`absolute top-[-17px] right-[-20px] mt-2 mr-2 px-2 py-1 text-white text-[7px] leading-[7px] font-bold rounded-full ${badgeColor} hover:cursor-pointer`}
