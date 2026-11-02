@@ -1,7 +1,7 @@
-import { TopologyService } from "@/app/(keep)/topology/model/models";
+import { TopologyService } from "@/app/(keep)/topology-v2/model/models";
 import useSWR, { SWRConfiguration } from "swr";
 import { useEffect } from "react";
-import { buildTopologyUrl } from "@/app/(keep)/topology/api";
+import { buildTopologyUrl } from "@/app/(keep)/topology-v2/api";
 import { useTopologyPollingContext } from "@/app/(keep)/topology/model/TopologyPollingContext";
 import { useApi } from "@/shared/lib/hooks/useApi";
 
@@ -11,6 +11,9 @@ type UseTopologyOptions = {
   providerIds?: string[];
   services?: string[];
   environment?: string;
+  vmNameRegex?: string;
+  hypervisorName?: string;
+  maxVmsPerHypervisor?: string;
   initialData?: TopologyService[];
   options?: SWRConfiguration;
 };
@@ -21,6 +24,9 @@ export const useTopology = (
     providerIds,
     services,
     environment,
+    vmNameRegex,
+    hypervisorName,
+    maxVmsPerHypervisor,
     initialData: fallbackData,
     options,
   }: UseTopologyOptions = {
@@ -33,7 +39,14 @@ export const useTopology = (
   const pollTopology = useTopologyPollingContext();
 
   const url = api.isReady()
-    ? buildTopologyUrl({ providerIds, services, environment })
+    ? buildTopologyUrl({
+        providerIds,
+        services,
+        environment,
+        vmNameRegex,
+        hypervisorName,
+        maxVmsPerHypervisor,
+      })
     : null;
 
   const { data, error, mutate } = useSWR<TopologyService[]>(
