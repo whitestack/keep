@@ -8,3 +8,13 @@
 .react-flow__edge.selectable {
   cursor: default;
 }
+
+.topology-v2-map .topology-status-edge {
+  stroke-width: 2;
+  transition: stroke-width 120ms ease;
+}
+
+.topology-v2-map .react-flow__edge:hover .topology-status-edge,
+.topology-v2-map .react-flow__edge.selected .topology-status-edge {
+  stroke-width: 3.5;
+}

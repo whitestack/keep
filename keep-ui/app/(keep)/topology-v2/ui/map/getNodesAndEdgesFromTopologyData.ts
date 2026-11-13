@@ -3,17 +3,25 @@ import {
   TopologyApplication,
   TopologyNode,
   TopologyService,
-} from "@/app/(keep)/topology/model";
+} from "@/app/(keep)/topology-v2/model";
 import { Edge } from "@xyflow/react";
 import {
   edgeLabelBgBorderRadiusNoHover,
   edgeLabelBgPaddingNoHover,
   edgeLabelBgStyleNoHover,
   edgeMarkerEndNoHover,
-} from "@/app/(keep)/topology/ui/map/styles";
+} from "@/app/(keep)/topology-v2/ui/map/styles";
 import { IncidentDto } from "@/entities/incidents/model";
 import { KeyedMutator } from "swr";
 import { AlertDto } from "@/entities/alerts/model";
+import {
+  getResourceName,
+  getResourceStatus,
+  inferConnectionState,
+  RESOURCE_STATES,
+} from "@/app/(keep)/topology-v2/lib/resource-state";
+import type { ResourceConnectionData } from "@/app/(keep)/topology-v2/ui/map/resource-status-edge";
+import { getPortTraffic } from "@/app/(keep)/topology-v2/lib/port-traffic";
 
 export function getNodesAndEdgesFromTopologyData(
   topologyData: TopologyService[],
@@ -24,6 +32,18 @@ export function getNodesAndEdgesFromTopologyData(
 ) {
   const nodeMap = new Map<string, TopologyNode>();
   const edgeMap = new Map<string, Edge>();
+  const servicesById = new Map(
+    topologyData.map((service) => [String(service.id), service])
+  );
+  const resourceStates = new Map(
+    topologyData.map((service) => [
+      String(service.id),
+      {
+        name: getResourceName(service),
+        status: getResourceStatus(service),
+      },
+    ])
+  );
 
   // Create nodes from service definitions
   for (const service of topologyData) {
@@ -61,21 +81,45 @@ export function getNodesAndEdgesFromTopologyData(
     }
     nodeMap.set(service.id.toString(), node);
     service.dependencies.forEach((dependency) => {
-      const dependencyService = topologyData.find(
-        (s) => s.id === dependency.serviceId
-      );
+      const dependencyService = servicesById.get(String(dependency.serviceId));
+      if (!dependencyService) return;
       const edgeId = dependency.id.toString();
       if (!edgeMap.has(edgeId)) {
+        const source = resourceStates.get(String(service.id))!;
+        const target = resourceStates.get(String(dependencyService.id))!;
+        const state = inferConnectionState(source.status, target.status);
+        const color = RESOURCE_STATES[state].color;
+        const connectionData: ResourceConnectionData = {
+          state,
+          sourceName: source.name,
+          targetName: target.name,
+          sourceStatus: source.status.label,
+          targetStatus: target.status.label,
+          traffic: getPortTraffic(service) ?? getPortTraffic(dependencyService),
+        };
         edgeMap.set(edgeId, {
           id: edgeId.toString(),
+          type: "resourceStatus",
           source: service.id.toString(),
-          target: dependencyService?.id.toString() ?? "",
+          target: dependencyService.id.toString(),
           label: dependency.protocol === "unknown" ? "" : dependency.protocol,
+          data: connectionData,
+          ariaLabel: `Connection ${source.name} to ${target.name}. Inferred condition: ${RESOURCE_STATES[state].label}.`,
+          style: {
+            stroke: color,
+            strokeDasharray:
+              state === "stopped"
+                ? "8 4"
+                : state === "unknown"
+                  ? "3 4"
+                  : undefined,
+          },
+          labelStyle: { fill: "#334155", fontSize: 11 },
           animated: false,
           labelBgPadding: edgeLabelBgPaddingNoHover,
-          labelBgStyle: edgeLabelBgStyleNoHover,
+          labelBgStyle: { ...edgeLabelBgStyleNoHover, stroke: color },
           labelBgBorderRadius: edgeLabelBgBorderRadiusNoHover,
-          markerEnd: edgeMarkerEndNoHover,
+          markerEnd: { ...edgeMarkerEndNoHover, color },
         });
       }
     });
