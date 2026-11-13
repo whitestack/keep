@@ -23,7 +23,7 @@ import {
   addEdge,
   reconnectEdge,
 } from "@xyflow/react";
-import { ServiceNode } from "./service-node";
+import { ServiceNode } from "@/app/(keep)/topology-v2/ui/map/service-node";
 import { Button, Card, MultiSelect, MultiSelectItem } from "@tremor/react";
 import {
   ArrowUpRightIcon,
@@ -31,19 +31,13 @@ import {
   ArrowUpTrayIcon,
   EllipsisHorizontalIcon,
 } from "@heroicons/react/24/outline";
-import {
-  edgeLabelBgStyleNoHover,
-  edgeMarkerEndNoHover,
-  edgeLabelBgStyleHover,
-  edgeMarkerEndHover,
-} from "./styles";
-import "./topology.css";
+import "@/app/(keep)/topology-v2/ui/map/topology.css";
 import Loading from "@/app/(keep)/loading";
 import { Link } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { useTopologySearchContext } from "../../TopologySearchContext";
-import { ApplicationNode } from "./application-node";
-import { ManageSelection } from "./manage-selection";
+import { useTopologySearchContext } from "@/app/(keep)/topology-v2/TopologySearchContext";
+import { ApplicationNode } from "@/app/(keep)/topology-v2/ui/map/application-node";
+import { ManageSelection } from "@/app/(keep)/topology-v2/ui/map/manage-selection";
 import {
   useTopology,
   useTopologyApplications,
@@ -53,14 +47,16 @@ import {
   TopologyServiceMinimal,
   TopologyApplicationMinimal,
 } from "@/app/(keep)/topology-v2/model";
-import { TopologySearchAutocomplete } from "../TopologySearchAutocomplete";
+import { TopologySearchAutocomplete } from "@/app/(keep)/topology-v2/ui/TopologySearchAutocomplete";
 import "@xyflow/react/dist/style.css";
 import { areSetsEqual } from "@/utils/helpers";
-import { getLayoutedElements } from "@/app/(keep)/topology/ui/map/getLayoutedElements";
-import { getNodesAndEdgesFromTopologyData } from "@/app/(keep)/topology/ui/map/getNodesAndEdgesFromTopologyData";
+import { getLayoutedElements } from "@/app/(keep)/topology-v2/ui/map/getLayoutedElements";
+import { getNodesAndEdgesFromTopologyData } from "@/app/(keep)/topology-v2/ui/map/getNodesAndEdgesFromTopologyData";
+import { ResourceStatusEdge } from "@/app/(keep)/topology-v2/ui/map/resource-status-edge";
+import { TopologyLegend } from "@/app/(keep)/topology-v2/ui/map/topology-legend";
 import { useIncidents } from "@/utils/hooks/useIncidents";
 import { EdgeBase, Connection } from "@xyflow/system";
-import { AddEditNodeSidePanel } from "./AddEditNodeSidePanel";
+import { AddEditNodeSidePanel } from "@/app/(keep)/topology-v2/ui/map/AddEditNodeSidePanel";
 import { useApi } from "@/shared/lib/hooks/useApi";
 import {
   DropdownMenu,
@@ -73,12 +69,15 @@ import { downloadFileFromString } from "@/shared/lib/downloadFileFromString";
 import { PlusIcon } from "@heroicons/react/20/solid";
 import { TbTopologyRing } from "react-icons/tb";
 import { useAlerts } from "@/entities/alerts/model";
-import { TopologyFilters, TopologyFiltersValue } from "../../topology-filter-panel";
+import { TopologyFilters, TopologyFiltersValue } from "@/app/(keep)/topology-v2/topology-filter-panel";
 
 const defaultFitViewOptions: FitViewOptions = {
   padding: 0.1,
   minZoom: 0.3,
 };
+
+const nodeTypes = { service: ServiceNode, application: ApplicationNode };
+const edgeTypes = { resourceStatus: ResourceStatusEdge };
 
 type TopologyMapProps = {
   topologyServices?: TopologyService[];
@@ -386,20 +385,6 @@ export function TopologyMap({
     []
   );
 
-  const onEdgeHover = (eventType: "enter" | "leave", edge: Edge) => {
-    const newEdges = [...edges];
-    const currentEdge = newEdges.find((e) => e.id === edge.id);
-    if (currentEdge) {
-      currentEdge.style = eventType === "enter" ? { stroke: "orange" } : {};
-      currentEdge.labelBgStyle =
-        eventType === "enter" ? edgeLabelBgStyleHover : edgeLabelBgStyleNoHover;
-      currentEdge.markerEnd =
-        eventType === "enter" ? edgeMarkerEndHover : edgeMarkerEndNoHover;
-      currentEdge.labelStyle = eventType === "enter" ? { fill: "white" } : {};
-      setEdges(newEdges);
-    }
-  };
-
   const handleSelectFromSearch = useCallback(
     ({
       value,
@@ -485,17 +470,25 @@ export function TopologyMap({
         previousNodesIds.current.size > 0 &&
         areSetsEqual(previousNodesIds.current, new Set(nodeMap.keys()))
       ) {
-        setEdges(newEdges);
+        setEdges((previous) => {
+          const previousById = new Map(previous.map((edge) => [edge.id, edge]));
+          return newEdges.map((edge) => ({
+            ...edge,
+            hidden: previousById.get(edge.id)?.hidden,
+            selected: previousById.get(edge.id)?.selected,
+          }));
+        });
         setNodes((prevNodes) =>
           prevNodes.map((n) => {
             const newNode = newNodes.find((nn) => nn.id === n.id);
             if (newNode) {
               // Update node, but keep the position
-              return { ...newNode, position: n.position };
+              return { ...n, data: newNode.data };
             }
             return n;
           })
         );
+        return;
       } else {
         previousNodesIds.current = new Set(nodeMap.keys());
       }
@@ -506,7 +499,7 @@ export function TopologyMap({
       setNodes(layoutedElements.nodes);
       setEdges(layoutedElements.edges);
     },
-    [topologyData, applicationMap, allIncidents, mutateTopologyData]
+    [topologyData, applicationMap, allIncidents, allAlerts, mutateTopologyData]
   );
 
   useEffect(
@@ -559,7 +552,7 @@ export function TopologyMap({
         duration: 300,
       });
     },
-    [applications, selectedApplicationIds]
+    [applications, selectedApplicationIds, topologyData]
   );
 
   if (isLoading) {
@@ -666,6 +659,7 @@ export function TopologyMap({
               getServiceById={getServiceById}
             />
             <ReactFlow
+              className="topology-v2-map"
               nodes={nodes}
               edges={edges}
               minZoom={0.1}
@@ -679,18 +673,15 @@ export function TopologyMap({
               onReconnectEnd={onReconnectEnd}
               onConnect={onConnect}
               zoomOnDoubleClick={true}
-              onEdgeMouseEnter={(_event, edge) => onEdgeHover("enter", edge)}
-              onEdgeMouseLeave={(_event, edge) => onEdgeHover("leave", edge)}
-              nodeTypes={{
-                service: ServiceNode,
-                application: ApplicationNode,
-              }}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
               onInit={(instance) => {
                 reactFlowInstanceRef.current = instance;
               }}
             >
               <Background variant={BackgroundVariant.Lines} />
               <Controls />
+              <TopologyLegend />
             </ReactFlow>
           </ReactFlowProvider>
           {!topologyData ||

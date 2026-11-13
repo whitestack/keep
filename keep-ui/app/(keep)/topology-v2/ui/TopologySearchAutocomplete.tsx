@@ -8,6 +8,7 @@ import {
 } from "@/app/(keep)/topology/model";
 import { AutocompleteInput } from "@/components/ui";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/solid";
+import { getResourceName } from "@/app/(keep)/topology-v2/lib/resource-state";
 import {
   AutocompleteInputProps,
   Option,
@@ -54,10 +55,10 @@ export function TopologySearchAutocomplete({
             service.service && !excludeServiceIds?.includes(service.service)
         )
         .map((service) => ({
-          label: service.display_name || service.service, // use display_name if available
+          label: getResourceName(service),
           value: {
             id: service.id,
-            name: service.display_name,
+            name: getResourceName(service),
             service: service.service,
           },
         })) || [];

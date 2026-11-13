@@ -1,7 +1,7 @@
-import { TopologyNode } from "@/app/(keep)/topology/model";
+import { TopologyNode } from "@/app/(keep)/topology-v2/model";
 import { Edge, Position } from "@xyflow/react";
 import dagre, { graphlib } from "@dagrejs/dagre";
-import { nodeHeight, nodeWidth } from "@/app/(keep)/topology/ui/map/styles";
+import { nodeHeight, nodeWidth } from "@/app/(keep)/topology-v2/ui/map/styles";
 
 export function getLayoutedElements(nodes: TopologyNode[], edges: Edge[]) {
   const dagreGraph = new graphlib.Graph({});
@@ -16,7 +16,15 @@ export function getLayoutedElements(nodes: TopologyNode[], edges: Edge[]) {
   });
 
   nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    dagreGraph.setNode(node.id, {
+      width: nodeWidth,
+      height:
+        nodeHeight +
+        (typeof node.data.category === "string" &&
+        node.data.category.trim().toLowerCase() === "instance"
+          ? 32
+          : 0),
+    });
   });
 
   edges.forEach((edge) => {
