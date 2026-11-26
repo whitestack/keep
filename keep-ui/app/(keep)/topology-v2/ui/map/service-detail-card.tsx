@@ -4,9 +4,6 @@
 import {
     Server,
     Monitor,
-    CircleCheck,
-    CircleAlert,
-    CircleX,
     ChevronDown,
     ChevronUp,
     Activity,
@@ -14,55 +11,23 @@ import {
     Plug
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { TopologyService } from "../../model/models";
+import { TopologyService } from "@/app/(keep)/topology-v2/model/models";
+import {
+    getResourceName,
+    getResourceStatus,
+    getResourceStatusDescription,
+    parseDescription,
+} from "@/app/(keep)/topology-v2/lib/resource-state";
+import { ResourceStatusBadge } from "@/app/(keep)/topology-v2/ui/map/resource-status-badge";
+import { isTrafficField } from "@/app/(keep)/topology-v2/lib/port-traffic";
+import {
+    getVmMetrics,
+    isVmMetricsField,
+} from "@/app/(keep)/topology-v2/lib/vm-metrics";
+import { VmMetricsDetails } from "@/app/(keep)/topology-v2/ui/map/vm-metrics";
 
 type Props = {
     service: TopologyService;
-};
-
-function parseDescription(description?: string | null): Record<string, string> {
-    if (!description) return {};
-
-    return Object.fromEntries(
-        description
-            .trim()
-            .split("|")
-            .map((part) => {
-                const separator = part.indexOf(":");
-                if (separator === -1) return null;
-
-                return [
-                    part.slice(0, separator).trim(),
-                    part.slice(separator + 1).trim(),
-                ];
-            })
-            .filter((entry): entry is [string, string] => entry !== null)
-    );
-}
-
-function getResourceType(service: TopologyService, fields: Record<string, string>) {
-    const serviceCategory = service.category?.toLowerCase();
-    return serviceCategory || "resource";
-}
-
-function getStatus(fields: Record<string, string>) {
-    const raw = (fields.Status ?? fields.State ?? "").toLowerCase();
-
-    if (["error", "down", "disabled", "failed", "inactive"].some((s) => raw.includes(s))) {
-        return { label: fields.Status ?? fields.State, tone: "red" as const };
-    }
-
-    if (["active", "up", "enabled", "healthy", "available"].some((s) => raw.includes(s))) {
-        return { label: fields.Status ?? fields.State, tone: "green" as const };
-    }
-
-    return { label: fields.Status ?? fields.State ?? "Unknown", tone: "neutral" as const };
-}
-
-const statusStyles = {
-    green: "bg-emerald-500/10 text-emerald-600 ring-emerald-500/20",
-    red: "bg-red-500/10 text-red-600 ring-red-500/20",
-    neutral: "bg-muted text-muted-foreground ring-border",
 };
 
 function getIcon(type: string) {
@@ -80,12 +45,13 @@ export default function ServiceDetailsCard({ service }: Props) {
         [service.description]
     );
 
-    const type = getResourceType(service, fields);
+    const type = service.category?.trim().toLowerCase() || "resource";
     const Icon = getIcon(type);
-    const status = getStatus(fields);
-
+    const status = getResourceStatus(service, fields);
+    const name = getResourceName(service, fields);
+    const vmMetrics = getVmMetrics(service);
     const attributes = Object.entries(fields).filter(
-        ([key]) => !["Status", "State"].includes(key)
+        ([key]) => !isTrafficField(key) && !isVmMetricsField(key)
     );
 
     return (
@@ -99,7 +65,7 @@ export default function ServiceDetailsCard({ service }: Props) {
                 <div className="min-w-0 flex-1 items-center">
                     <div className="mb-1 flex flex-wrap items-center gap-2">
                         <h2 className="break-words text-base font-semibold tracking-tight">
-                            {service.display_name || "<Unnamed>"}
+                            {name}
                         </h2>
                         <span className="rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground">
                             {type}
@@ -107,19 +73,13 @@ export default function ServiceDetailsCard({ service }: Props) {
                     </div>
                 </div>
 
-                <span
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusStyles[status.tone]}`}
-                >
-                    {status.tone === "green" ? (
-                        <CircleCheck className="h-3.5 w-3.5" />
-                    ) : status.tone === "red" ? (
-                        <CircleX className="h-3.5 w-3.5" />
-                    ) : (
-                        <CircleAlert className="h-3.5 w-3.5" />
-                    )}
-                    {status.label}
-                </span>
+                <ResourceStatusBadge
+                    status={status}
+                    title={getResourceStatusDescription(service, fields)}
+                />
             </div>
+
+            {vmMetrics && <VmMetricsDetails metrics={vmMetrics} />}
 
             {/* Attributes */}
             {attributes.length > 0 && (
